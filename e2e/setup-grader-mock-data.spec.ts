@@ -39,42 +39,42 @@ const AUTH_FILE = path.join(__dirname, 'secretary-setup-auth.json');
 const DECISION_NAME = 'HK1';
 
 const SCHEDULE = {
-  subjectName:       'Kiểm thử phần mềm',
-  clazz:             'CT07',
+  subjectName: 'Kiểm thử phần mềm',
+  clazz: 'CT07',
   subjectCodeUnique: 'KTPM2025',
-  subjectCredits:    '3',
-  format:            'Tự luận',
-  onlineExam:        'x',
-  startTimeRaw:      '15/12/2025 08:00 đến 15/12/2026 10:00',
-  note:              'Mock data - kiểm thử chấm thi',
+  subjectCredits: '3',
+  format: 'Tự luận',
+  onlineExam: 'x',
+  startTimeRaw: '01/05/2025 08:00 đến 20/05/2025 10:00',
+  note: 'Mock data - kiểm thử chấm thi',
 };
 
-const ROOM_NAME  = 'P102';
+const ROOM_NAME = 'P102';
 const COVER_CODE = 'A5';
 
 const MAIN_STUDENT = {
   studentCode: 'CT070218',
-  fullName:    'Huỳnh Ngọc Hải',
+  fullName: 'Huỳnh Ngọc Hải',
   dateOfBirth: '24/11/2004',
-  clazz:       'CT07',
+  clazz: 'CT07',
 };
 
 const MOCK_STUDENTS = [
-  { studentCode: 'CT070201', fullName: 'Nguyễn Văn An',    dateOfBirth: '01/03/2004', clazz: 'CT07' },
-  { studentCode: 'CT070202', fullName: 'Trần Thị Bình',    dateOfBirth: '15/05/2004', clazz: 'CT07' },
-  { studentCode: 'CT070203', fullName: 'Lê Hoàng Cường',   dateOfBirth: '22/07/2004', clazz: 'CT07' },
-  { studentCode: 'CT070204', fullName: 'Phạm Thị Dung',    dateOfBirth: '08/09/2004', clazz: 'CT07' },
-  { studentCode: 'CT070205', fullName: 'Hoàng Văn Em',     dateOfBirth: '30/01/2004', clazz: 'CT07' },
-  { studentCode: 'CT070206', fullName: 'Vũ Thị Phương',    dateOfBirth: '12/04/2004', clazz: 'CT07' },
-  { studentCode: 'CT070207', fullName: 'Đặng Minh Quân',   dateOfBirth: '25/06/2004', clazz: 'CT07' },
-  { studentCode: 'CT070208', fullName: 'Bùi Thị Hoa',      dateOfBirth: '03/08/2004', clazz: 'CT07' },
-  { studentCode: 'CT070209', fullName: 'Ngô Văn Khoa',     dateOfBirth: '17/10/2004', clazz: 'CT07' },
-  { studentCode: 'CT070210', fullName: 'Đinh Thị Lan',     dateOfBirth: '29/12/2004', clazz: 'CT07' },
+  { studentCode: 'CT070201', fullName: 'Nguyễn Văn An', dateOfBirth: '01/03/2004', clazz: 'CT07' },
+  { studentCode: 'CT070202', fullName: 'Trần Thị Bình', dateOfBirth: '15/05/2004', clazz: 'CT07' },
+  { studentCode: 'CT070203', fullName: 'Lê Hoàng Cường', dateOfBirth: '22/07/2004', clazz: 'CT07' },
+  { studentCode: 'CT070204', fullName: 'Phạm Thị Dung', dateOfBirth: '08/09/2004', clazz: 'CT07' },
+  { studentCode: 'CT070205', fullName: 'Hoàng Văn Em', dateOfBirth: '30/01/2004', clazz: 'CT07' },
+  { studentCode: 'CT070206', fullName: 'Vũ Thị Phương', dateOfBirth: '12/04/2004', clazz: 'CT07' },
+  { studentCode: 'CT070207', fullName: 'Đặng Minh Quân', dateOfBirth: '25/06/2004', clazz: 'CT07' },
+  { studentCode: 'CT070208', fullName: 'Bùi Thị Hoa', dateOfBirth: '03/08/2004', clazz: 'CT07' },
+  { studentCode: 'CT070209', fullName: 'Ngô Văn Khoa', dateOfBirth: '17/10/2004', clazz: 'CT07' },
+  { studentCode: 'CT070210', fullName: 'Đinh Thị Lan', dateOfBirth: '29/12/2004', clazz: 'CT07' },
 ];
 
-const GRADER_1        = 'lamtung';
-const GRADER_2        = 'huytq';
-const TEMPLATE_NAME   = 'Viết 3 câu';
+const GRADER_1 = 'lamtung';
+const GRADER_2 = 'huytq';
+const TEMPLATE_NAME = 'Viết 3 câu';
 
 // ============================================================
 // HELPER: Chọn option trong app-search-select
@@ -127,7 +127,7 @@ test.describe.serial('Setup Mock Data — Grader Scoring', () => {
   test('SETUP-01: Đăng nhập Secretary', async ({ page }) => {
     await loginAsSecretary(page);
     await expect(page).toHaveURL(/dashboard/);
-    
+
     // Lưu lại session
     if (!fs.existsSync(path.dirname(AUTH_FILE))) {
       fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
@@ -141,267 +141,267 @@ test.describe.serial('Setup Mock Data — Grader Scoring', () => {
     test.use({ storageState: fs.existsSync(AUTH_FILE) ? AUTH_FILE : undefined });
 
     // ─── SETUP-02: Tạo kế hoạch thi ──────────────────────────────
-  test('SETUP-02: Tạo kế hoạch thi Kiểm thử phần mềm (thi online)', async ({ page }) => {
-    await page.goto('/dashboard/exam-schedules');
-    await page.waitForSelector('.esm-title', { state: 'visible', timeout: 15_000 });
+    test('SETUP-02: Tạo kế hoạch thi Kiểm thử phần mềm (thi online)', async ({ page }) => {
+      await page.goto('/dashboard/exam-schedules');
+      await page.waitForSelector('.esm-title', { state: 'visible', timeout: 15_000 });
 
-    // Mở modal thêm
-    await page.click('button:has-text("Thêm kế hoạch")');
-    await expect(page.locator('.modal')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.ma-head-title')).toContainText('Chọn quyết định thi');
+      // Mở modal thêm
+      await page.click('button:has-text("Thêm kế hoạch")');
+      await expect(page.locator('.modal')).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('.ma-head-title')).toContainText('Chọn quyết định thi');
 
-    // Bước 1: chọn quyết định HK1
-    await selectDecision(page, '.modal app-search-select', DECISION_NAME);
-    await expect(page.locator('.ma-head-title')).toContainText('Thêm kế hoạch thi', { timeout: 5000 });
+      // Bước 1: chọn quyết định HK1
+      await selectDecision(page, '.modal app-search-select', DECISION_NAME);
+      await expect(page.locator('.ma-head-title')).toContainText('Thêm kế hoạch thi', { timeout: 5000 });
 
-    // Bước 2: điền form
-    await page.fill('input[formControlName="subjectName"]',       SCHEDULE.subjectName);
-    await page.fill('input[formControlName="clazz"]',             SCHEDULE.clazz);
-    await page.fill('input[formControlName="subjectCodeUnique"]', SCHEDULE.subjectCodeUnique);
-    await page.fill('input[formControlName="subjectCredits"]',    SCHEDULE.subjectCredits);
-    await page.fill('input[formControlName="format"]',            SCHEDULE.format);
-    await page.fill('input[formControlName="onlineExam"]',        SCHEDULE.onlineExam);
-    await page.fill('input[formControlName="startTimeRaw"]',      SCHEDULE.startTimeRaw);
-    await page.locator('input[formControlName="startTimeRaw"]').blur();
-    await page.waitForTimeout(300);
-    await page.fill('textarea[formControlName="note"]',           SCHEDULE.note);
+      // Bước 2: điền form
+      await page.fill('input[formControlName="subjectName"]', SCHEDULE.subjectName);
+      await page.fill('input[formControlName="clazz"]', SCHEDULE.clazz);
+      await page.fill('input[formControlName="subjectCodeUnique"]', SCHEDULE.subjectCodeUnique);
+      await page.fill('input[formControlName="subjectCredits"]', SCHEDULE.subjectCredits);
+      await page.fill('input[formControlName="format"]', SCHEDULE.format);
+      await page.fill('input[formControlName="onlineExam"]', SCHEDULE.onlineExam);
+      await page.fill('input[formControlName="startTimeRaw"]', SCHEDULE.startTimeRaw);
+      await page.locator('input[formControlName="startTimeRaw"]').blur();
+      await page.waitForTimeout(300);
+      await page.fill('textarea[formControlName="note"]', SCHEDULE.note);
 
-    const submitBtn = page.locator('.ma-foot .ma-btn-save');
-    await expect(submitBtn).not.toBeDisabled();
-    await submitBtn.click();
+      const submitBtn = page.locator('.ma-foot .ma-btn-save');
+      await expect(submitBtn).not.toBeDisabled();
+      await submitBtn.click();
 
-    await page.waitForSelector('.modal', { state: 'hidden', timeout: 10_000 });
-    await page.waitForTimeout(1000);
+      await page.waitForSelector('.modal', { state: 'hidden', timeout: 10_000 });
+      await page.waitForTimeout(1000);
 
-    // Verify record xuất hiện
-    const decisionInput = page.locator('.filter-bar app-search-select input').first();
-    await decisionInput.click();
-    await decisionInput.fill(DECISION_NAME);
-    await decisionInput.press('Enter');
-    await page.waitForTimeout(800);
-    const opt = page.locator('.ss-opt, [class*="ss-option"]').first();
-    if (await opt.isVisible({ timeout: 3000 })) await opt.click();
-    await page.waitForTimeout(500);
-
-    const subjectInput = page.locator('.filter-bar input[placeholder*="môn"]').first();
-    await subjectInput.fill(SCHEDULE.subjectName);
-    await page.click('button.btn-search');
-    await page.waitForSelector('.skeleton-wrap', { state: 'hidden', timeout: 10_000 });
-
-    await expect(page.locator('.esm-table tbody tr').first()).toContainText(SCHEDULE.subjectName, { timeout: 5000 });
-    console.log(`✅ Tạo kế hoạch thi: "${SCHEDULE.subjectName}" (thi online)`);
-  });
-
-  // ─── SETUP-03: Tạo phòng thi P102 ────────────────────────────
-  test('SETUP-03: Tạo phòng thi P102 với mã phách A5', async ({ page }) => {
-    await page.goto('/dashboard/exam-rooms');
-    await page.waitForSelector('.erm-title', { state: 'visible', timeout: 15_000 });
-
-    // Mở dialog thêm phòng
-    await page.click('button:has-text("Thêm phòng mới")');
-    await expect(page.locator('.modal')).toBeVisible({ timeout: 5000 });
-
-    // Chọn quyết định
-    await selectDecision(page, '.modal app-search-select', DECISION_NAME);
-    await page.waitForTimeout(500);
-
-    // Chọn kế hoạch thi
-    const scheduleSelect = page.locator('.modal app-search-select').nth(1);
-    const scheduleInput  = scheduleSelect.locator('input').first();
-    await scheduleInput.click();
-    await scheduleInput.fill(SCHEDULE.subjectName);
-    await scheduleInput.press('Enter');
-    await page.waitForTimeout(800);
-    const schedOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
-    if (await schedOpt.isVisible({ timeout: 3000 })) await schedOpt.click();
-    await page.waitForTimeout(400);
-
-    // Điền tên phòng
-    await page.fill('input[formControlName="roomName"]', ROOM_NAME);
-
-    // Điền mã phách A5
-    const coverInput = page.locator('input[formControlName="coverCode"]');
-    if (await coverInput.isVisible({ timeout: 2000 })) {
-      await coverInput.fill(COVER_CODE);
-    }
-
-    // Lưu
-    const saveBtn = page.locator('.ma-foot .ma-btn-save');
-    await expect(saveBtn).not.toBeDisabled();
-    await saveBtn.click();
-
-    await page.waitForSelector('.modal', { state: 'hidden', timeout: 10_000 });
-    await page.waitForTimeout(1000);
-
-    // Verify phòng xuất hiện trong sidebar
-    await expect(page.locator(`.erc-room-item:has-text("${ROOM_NAME}")`).first()).toBeVisible({ timeout: 5000 });
-    console.log(`✅ Tạo phòng thi: ${ROOM_NAME} (mã phách: ${COVER_CODE})`);
-  });
-
-  // ─── SETUP-04: Thêm thí sinh chính CT070218 ──────────────────
-  test('SETUP-04: Thêm thí sinh CT070218 - Huỳnh Ngọc Hải', async ({ page }) => {
-    await page.goto('/dashboard/exam-rooms');
-    await page.waitForSelector('.erm-title', { state: 'visible', timeout: 15_000 });
-
-    // Lọc theo quyết định + kế hoạch để tìm phòng P102
-    await selectDecision(page, '.filter-bar app-search-select:first-of-type', DECISION_NAME);
-    await page.waitForTimeout(500);
-
-    const scheduleFilterSelect = page.locator('.filter-bar app-search-select').nth(1);
-    const schedFilterInput = scheduleFilterSelect.locator('input').first();
-    await schedFilterInput.click();
-    await schedFilterInput.fill(SCHEDULE.subjectName);
-    await schedFilterInput.press('Enter');
-    await page.waitForTimeout(800);
-    const schedFilterOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
-    if (await schedFilterOpt.isVisible({ timeout: 3000 })) await schedFilterOpt.click();
-    await page.waitForTimeout(500);
-
-    // Click vào phòng P102 trong sidebar
-    const roomItem = page.locator(`.erc-room-item:has-text("${ROOM_NAME}")`).first();
-    await expect(roomItem).toBeVisible({ timeout: 5000 });
-    await roomItem.click();
-    await page.waitForTimeout(500);
-
-    // Thêm thí sinh chính
-    await addCandidate(page, MAIN_STUDENT);
-
-    console.log(`✅ Thêm thí sinh: ${MAIN_STUDENT.studentCode} - ${MAIN_STUDENT.fullName}`);
-  });
-
-  // ─── SETUP-05: Thêm 10 sinh viên mock ────────────────────────
-  test('SETUP-05: Thêm 10 sinh viên mock vào phòng P102', async ({ page }) => {
-    await page.goto('/dashboard/exam-rooms');
-    await page.waitForSelector('.erm-title', { state: 'visible', timeout: 15_000 });
-
-    // Lọc và chọn phòng P102
-    await selectDecision(page, '.filter-bar app-search-select:first-of-type', DECISION_NAME);
-    await page.waitForTimeout(500);
-
-    const schedFilterInput = page.locator('.filter-bar app-search-select').nth(1).locator('input').first();
-    await schedFilterInput.click();
-    await schedFilterInput.fill(SCHEDULE.subjectName);
-    await schedFilterInput.press('Enter');
-    await page.waitForTimeout(800);
-    const schedOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
-    if (await schedOpt.isVisible({ timeout: 3000 })) await schedOpt.click();
-    await page.waitForTimeout(500);
-
-    const roomItem = page.locator(`.erc-room-item:has-text("${ROOM_NAME}")`).first();
-    await expect(roomItem).toBeVisible({ timeout: 5000 });
-    await roomItem.click();
-    await page.waitForTimeout(500);
-
-    // Thêm từng sinh viên
-    for (let i = 0; i < MOCK_STUDENTS.length; i++) {
-      const student = MOCK_STUDENTS[i];
-      await addCandidate(page, student);
-      console.log(`  ✅ [${i + 1}/10] ${student.studentCode} - ${student.fullName}`);
-    }
-
-    console.log(`✅ Đã thêm 10 sinh viên mock vào phòng ${ROOM_NAME}`);
-  });
-
-  // ─── SETUP-06: Chuyển phòng sang PHACH ───────────────────────
-  test('SETUP-06: Chuyển phòng P102 sang trạng thái PHACH', async ({ page }) => {
-    await page.goto('/dashboard/exam-rooms');
-    await page.waitForSelector('.erm-title', { state: 'visible', timeout: 15_000 });
-
-    // Lọc và chọn phòng P102
-    await selectDecision(page, '.filter-bar app-search-select:first-of-type', DECISION_NAME);
-    await page.waitForTimeout(500);
-
-    const schedFilterInput = page.locator('.filter-bar app-search-select').nth(1).locator('input').first();
-    await schedFilterInput.click();
-    await schedFilterInput.fill(SCHEDULE.subjectName);
-    await schedFilterInput.press('Enter');
-    await page.waitForTimeout(800);
-    const schedOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
-    if (await schedOpt.isVisible({ timeout: 3000 })) await schedOpt.click();
-    await page.waitForTimeout(500);
-
-    const roomItem = page.locator(`.erc-room-item:has-text("${ROOM_NAME}")`).first();
-    await expect(roomItem).toBeVisible({ timeout: 5000 });
-    await roomItem.click();
-    await page.waitForTimeout(500);
-
-    // Click nút "Chuyển phách" — chỉ active khi phòng đang THI
-    const chuyenPhachBtn = page.locator('button.btn-phach, button:has-text("Chuyển phách")');
-    await expect(chuyenPhachBtn).toBeVisible({ timeout: 5000 });
-    await expect(chuyenPhachBtn).not.toBeDisabled();
-    await chuyenPhachBtn.click();
-    await page.waitForTimeout(500);
-
-    // Xác nhận trong dialog nếu có
-    const confirmBtn = page.locator('.p-confirm-dialog-accept, button:has-text("Xác nhận"), button:has-text("Đồng ý")');
-    if (await confirmBtn.isVisible({ timeout: 2000 })) {
-      await confirmBtn.click();
+      // Verify record xuất hiện
+      const decisionInput = page.locator('.filter-bar app-search-select input').first();
+      await decisionInput.click();
+      await decisionInput.fill(DECISION_NAME);
+      await decisionInput.press('Enter');
+      await page.waitForTimeout(800);
+      const opt = page.locator('.ss-opt, [class*="ss-option"]').first();
+      if (await opt.isVisible({ timeout: 3000 })) await opt.click();
       await page.waitForTimeout(500);
-    }
 
-    // Verify badge trạng thái đổi sang PHACH
-    await page.waitForTimeout(1000);
-    const statusBadge = page.locator('.erc-room-item.active .status-badge, .room-meta-row .status-badge').first();
-    await expect(statusBadge).toContainText(/phach|PHACH|Chờ phách/i, { timeout: 5000 });
-    console.log(`✅ Phòng ${ROOM_NAME} đã chuyển sang trạng thái PHACH`);
-  });
+      const subjectInput = page.locator('.filter-bar input[placeholder*="môn"]').first();
+      await subjectInput.fill(SCHEDULE.subjectName);
+      await page.click('button.btn-search');
+      await page.waitForSelector('.skeleton-wrap', { state: 'hidden', timeout: 10_000 });
 
-  // ─── SETUP-07: Chuyển phòng từ PHACH sang CHAM ───────────────
-  test('SETUP-07: Chuyển phòng P102 từ PHACH sang CHAM', async ({ page }) => {
-    await page.goto('/dashboard/exam-rooms');
-    await page.waitForSelector('.erm-title', { state: 'visible', timeout: 15_000 });
+      await expect(page.locator('.esm-table tbody tr').first()).toContainText(SCHEDULE.subjectName, { timeout: 5000 });
+      console.log(`✅ Tạo kế hoạch thi: "${SCHEDULE.subjectName}" (thi online)`);
+    });
 
-    // Lọc và chọn phòng P102
-    await selectDecision(page, '.filter-bar app-search-select:first-of-type', DECISION_NAME);
-    await page.waitForTimeout(500);
+    // ─── SETUP-03: Tạo phòng thi P102 ────────────────────────────
+    test('SETUP-03: Tạo phòng thi P102 với mã phách A5', async ({ page }) => {
+      await page.goto('/dashboard/exam-rooms');
+      await page.waitForSelector('.erm-title', { state: 'visible', timeout: 15_000 });
 
-    const schedFilterInput = page.locator('.filter-bar app-search-select').nth(1).locator('input').first();
-    await schedFilterInput.click();
-    await schedFilterInput.fill(SCHEDULE.subjectName);
-    await schedFilterInput.press('Enter');
-    await page.waitForTimeout(800);
-    const schedOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
-    if (await schedOpt.isVisible({ timeout: 3000 })) await schedOpt.click();
-    await page.waitForTimeout(500);
+      // Mở dialog thêm phòng
+      await page.click('button:has-text("Thêm phòng mới")');
+      await expect(page.locator('.modal')).toBeVisible({ timeout: 5000 });
 
-    const roomItem = page.locator(`.erc-room-item:has-text("${ROOM_NAME}")`).first();
-    await expect(roomItem).toBeVisible({ timeout: 5000 });
-    await roomItem.click();
-    await page.waitForTimeout(500);
-
-    // Mở dialog sửa phòng để đổi status từ PHACH → CHAM
-    // Click nút sửa (act-btn edit) trên room item trong sidebar
-    const editBtn = roomItem.locator('.act-btn.edit');
-    await editBtn.click();
-    await expect(page.locator('.modal')).toBeVisible({ timeout: 5000 });
-
-    // Đổi trạng thái sang CHAM
-    const statusSelect = page.locator('.modal select[formControlName="status"], .modal .ma-inp[formControlName="status"]');
-    await statusSelect.selectOption({ value: 'CHAM' });
-    await page.waitForTimeout(300);
-
-    // Lưu
-    const saveBtn = page.locator('.modal .ma-foot .ma-btn-save');
-    await expect(saveBtn).not.toBeDisabled();
-    await saveBtn.click();
-
-    // Xác nhận mật khẩu nếu có (component yêu cầu password verify khi edit)
-    const pwdInput = page.locator('input[type="password"]').last();
-    if (await pwdInput.isVisible({ timeout: 2000 })) {
-      await pwdInput.fill('Haibeo2004@');
-      const pwdConfirmBtn = page.locator('button:has-text("Xác nhận"), button:has-text("Confirm")').last();
-      await pwdConfirmBtn.click();
+      // Chọn quyết định
+      await selectDecision(page, '.modal app-search-select', DECISION_NAME);
       await page.waitForTimeout(500);
-    }
 
-    await page.waitForSelector('.modal', { state: 'hidden', timeout: 10_000 });
-    await page.waitForTimeout(1000);
+      // Chọn kế hoạch thi
+      const scheduleSelect = page.locator('.modal app-search-select').nth(1);
+      const scheduleInput = scheduleSelect.locator('input').first();
+      await scheduleInput.click();
+      await scheduleInput.fill(SCHEDULE.subjectName);
+      await scheduleInput.press('Enter');
+      await page.waitForTimeout(800);
+      const schedOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
+      if (await schedOpt.isVisible({ timeout: 3000 })) await schedOpt.click();
+      await page.waitForTimeout(400);
 
-    // Verify badge đổi sang CHAM
-    const statusBadge = page.locator(`.erc-room-item:has-text("${ROOM_NAME}") .status-badge`).first();
-    await expect(statusBadge).toContainText(/cham|CHAM|Đang chấm/i, { timeout: 5000 });
-    console.log(`✅ Phòng ${ROOM_NAME} đã chuyển sang trạng thái CHAM`);
-  });
+      // Điền tên phòng
+      await page.fill('input[formControlName="roomName"]', ROOM_NAME);
+
+      // Điền mã phách A5 thủ công (phải khớp với file Excel VALID.xlsx)
+      const coverInput = page.locator('input[formControlName="coverCode"]');
+      if (await coverInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await coverInput.fill(COVER_CODE);
+      }
+
+      // Lưu
+      const saveBtn = page.locator('.ma-foot .ma-btn-save');
+      await expect(saveBtn).not.toBeDisabled();
+      await saveBtn.click();
+
+      await page.waitForSelector('.modal', { state: 'hidden', timeout: 10_000 });
+      await page.waitForTimeout(1000);
+
+      // Verify phòng xuất hiện trong sidebar
+      await expect(page.locator(`.erc-room-item:has-text("${ROOM_NAME}")`).first()).toBeVisible({ timeout: 5000 });
+      console.log(`✅ Tạo phòng thi: ${ROOM_NAME} (mã phách: ${COVER_CODE})`);
+    });
+
+    // ─── SETUP-04: Thêm thí sinh chính CT070218 ──────────────────
+    test('SETUP-04: Thêm thí sinh CT070218 - Huỳnh Ngọc Hải', async ({ page }) => {
+      await page.goto('/dashboard/exam-rooms');
+      await page.waitForSelector('.erm-title', { state: 'visible', timeout: 15_000 });
+
+      // Lọc theo quyết định + kế hoạch để tìm phòng P102
+      await selectDecision(page, '.filter-bar app-search-select:first-of-type', DECISION_NAME);
+      await page.waitForTimeout(500);
+
+      const scheduleFilterSelect = page.locator('.filter-bar app-search-select').nth(1);
+      const schedFilterInput = scheduleFilterSelect.locator('input').first();
+      await schedFilterInput.click();
+      await schedFilterInput.fill(SCHEDULE.subjectName);
+      await schedFilterInput.press('Enter');
+      await page.waitForTimeout(800);
+      const schedFilterOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
+      if (await schedFilterOpt.isVisible({ timeout: 3000 })) await schedFilterOpt.click();
+      await page.waitForTimeout(500);
+
+      // Click vào phòng P102 trong sidebar
+      const roomItem = page.locator(`.erc-room-item:has-text("${ROOM_NAME}")`).first();
+      await expect(roomItem).toBeVisible({ timeout: 5000 });
+      await roomItem.click();
+      await page.waitForTimeout(500);
+
+      // Thêm thí sinh chính
+      await addCandidate(page, MAIN_STUDENT);
+
+      console.log(`✅ Thêm thí sinh: ${MAIN_STUDENT.studentCode} - ${MAIN_STUDENT.fullName}`);
+    });
+
+    // ─── SETUP-05: Thêm 10 sinh viên mock ────────────────────────
+    test('SETUP-05: Thêm 10 sinh viên mock vào phòng P102', async ({ page }) => {
+      await page.goto('/dashboard/exam-rooms');
+      await page.waitForSelector('.erm-title', { state: 'visible', timeout: 15_000 });
+
+      // Lọc và chọn phòng P102
+      await selectDecision(page, '.filter-bar app-search-select:first-of-type', DECISION_NAME);
+      await page.waitForTimeout(500);
+
+      const schedFilterInput = page.locator('.filter-bar app-search-select').nth(1).locator('input').first();
+      await schedFilterInput.click();
+      await schedFilterInput.fill(SCHEDULE.subjectName);
+      await schedFilterInput.press('Enter');
+      await page.waitForTimeout(800);
+      const schedOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
+      if (await schedOpt.isVisible({ timeout: 3000 })) await schedOpt.click();
+      await page.waitForTimeout(500);
+
+      const roomItem = page.locator(`.erc-room-item:has-text("${ROOM_NAME}")`).first();
+      await expect(roomItem).toBeVisible({ timeout: 5000 });
+      await roomItem.click();
+      await page.waitForTimeout(500);
+
+      // Thêm từng sinh viên
+      for (let i = 0; i < MOCK_STUDENTS.length; i++) {
+        const student = MOCK_STUDENTS[i];
+        await addCandidate(page, student);
+        console.log(`  ✅ [${i + 1}/10] ${student.studentCode} - ${student.fullName}`);
+      }
+
+      console.log(`✅ Đã thêm 10 sinh viên mock vào phòng ${ROOM_NAME}`);
+    });
+
+    // ─── SETUP-06: Chuyển phòng sang PHACH ───────────────────────
+    test('SETUP-06: Chuyển phòng P102 sang trạng thái PHACH', async ({ page }) => {
+      await page.goto('/dashboard/exam-rooms');
+      await page.waitForSelector('.erm-title', { state: 'visible', timeout: 15_000 });
+
+      // Lọc và chọn phòng P102
+      await selectDecision(page, '.filter-bar app-search-select:first-of-type', DECISION_NAME);
+      await page.waitForTimeout(500);
+
+      const schedFilterInput = page.locator('.filter-bar app-search-select').nth(1).locator('input').first();
+      await schedFilterInput.click();
+      await schedFilterInput.fill(SCHEDULE.subjectName);
+      await schedFilterInput.press('Enter');
+      await page.waitForTimeout(800);
+      const schedOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
+      if (await schedOpt.isVisible({ timeout: 3000 })) await schedOpt.click();
+      await page.waitForTimeout(500);
+
+      const roomItem = page.locator(`.erc-room-item:has-text("${ROOM_NAME}")`).first();
+      await expect(roomItem).toBeVisible({ timeout: 5000 });
+      await roomItem.click();
+      await page.waitForTimeout(500);
+
+      // Click nút "Chuyển phách" — chỉ active khi phòng đang THI
+      const chuyenPhachBtn = page.locator('button.btn-phach, button:has-text("Chuyển phách")');
+      await expect(chuyenPhachBtn).toBeVisible({ timeout: 5000 });
+      await expect(chuyenPhachBtn).not.toBeDisabled();
+      await chuyenPhachBtn.click();
+      await page.waitForTimeout(500);
+
+      // Xác nhận trong dialog nếu có
+      const confirmBtn = page.locator('.p-confirm-dialog-accept, button:has-text("Xác nhận"), button:has-text("Đồng ý")');
+      if (await confirmBtn.isVisible({ timeout: 2000 })) {
+        await confirmBtn.click();
+        await page.waitForTimeout(500);
+      }
+
+      // Verify badge trạng thái đổi sang PHACH
+      await page.waitForTimeout(1000);
+      const statusBadge = page.locator('.erc-room-item.active .status-badge, .room-meta-row .status-badge').first();
+      await expect(statusBadge).toContainText(/phach|PHACH|Chờ phách/i, { timeout: 5000 });
+      console.log(`✅ Phòng ${ROOM_NAME} đã chuyển sang trạng thái PHACH`);
+    });
+
+    // ─── SETUP-07: Chuyển phòng từ PHACH sang CHAM ───────────────
+    test('SETUP-07: Chuyển phòng P102 từ PHACH sang CHAM', async ({ page }) => {
+      await page.goto('/dashboard/exam-rooms');
+      await page.waitForSelector('.erm-title', { state: 'visible', timeout: 15_000 });
+
+      // Lọc và chọn phòng P102
+      await selectDecision(page, '.filter-bar app-search-select:first-of-type', DECISION_NAME);
+      await page.waitForTimeout(500);
+
+      const schedFilterInput = page.locator('.filter-bar app-search-select').nth(1).locator('input').first();
+      await schedFilterInput.click();
+      await schedFilterInput.fill(SCHEDULE.subjectName);
+      await schedFilterInput.press('Enter');
+      await page.waitForTimeout(800);
+      const schedOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
+      if (await schedOpt.isVisible({ timeout: 3000 })) await schedOpt.click();
+      await page.waitForTimeout(500);
+
+      const roomItem = page.locator(`.erc-room-item:has-text("${ROOM_NAME}")`).first();
+      await expect(roomItem).toBeVisible({ timeout: 5000 });
+      await roomItem.click();
+      await page.waitForTimeout(500);
+
+      // Mở dialog sửa phòng để đổi status từ PHACH → CHAM
+      // Click nút sửa (act-btn edit) trên room item trong sidebar
+      const editBtn = roomItem.locator('.act-btn.edit');
+      await editBtn.click();
+      await expect(page.locator('.modal')).toBeVisible({ timeout: 5000 });
+
+      // Đổi trạng thái sang CHAM
+      const statusSelect = page.locator('.modal select[formControlName="status"], .modal .ma-inp[formControlName="status"]');
+      await statusSelect.selectOption({ value: 'CHAM' });
+      await page.waitForTimeout(300);
+
+      // Lưu
+      const saveBtn = page.locator('.modal .ma-foot .ma-btn-save');
+      await expect(saveBtn).not.toBeDisabled();
+      await saveBtn.click();
+
+      // Xác nhận mật khẩu nếu có (component yêu cầu password verify khi edit)
+      const pwdInput = page.locator('input[type="password"]').last();
+      if (await pwdInput.isVisible({ timeout: 2000 })) {
+        await pwdInput.fill('Haibeo2004@');
+        const pwdConfirmBtn = page.locator('button:has-text("Xác nhận"), button:has-text("Confirm")').last();
+        await pwdConfirmBtn.click();
+        await page.waitForTimeout(500);
+      }
+
+      await page.waitForSelector('.modal', { state: 'hidden', timeout: 10_000 });
+      await page.waitForTimeout(1000);
+
+      // Verify badge đổi sang CHAM
+      const statusBadge = page.locator(`.erc-room-item:has-text("${ROOM_NAME}") .status-badge`).first();
+      await expect(statusBadge).toContainText(/cham|CHAM|Đang chấm/i, { timeout: 5000 });
+      console.log(`✅ Phòng ${ROOM_NAME} đã chuyển sang trạng thái CHAM`);
+    });
 
   }); // End sub-describe for Secretary
 
@@ -411,7 +411,7 @@ test.describe.serial('Setup Mock Data — Grader Scoring', () => {
   test('SETUP-08: Giao phòng P102 cho grader lamtung & huytq (template Viết 3 câu)', async ({ page }) => {
     // Reset storage state cho test này vì login user khác
     await page.context().clearCookies();
-    
+
     // Đăng nhập bằng ADMIN_CHAM
     await page.goto('/login');
     await page.waitForSelector('#username', { state: 'visible' });
@@ -580,7 +580,7 @@ test.describe('Cleanup Mock Data', () => {
     let deleted = 0;
     for (let i = 0; i < count; i++) {
       const firstRow = page.locator('.esm-table tbody tr').first();
-      const rowText  = await firstRow.textContent();
+      const rowText = await firstRow.textContent();
 
       if (!rowText?.includes(SCHEDULE.subjectName)) break;
 
@@ -598,17 +598,16 @@ test.describe('Cleanup Mock Data', () => {
       await page.waitForTimeout(300);
 
       // Inline confirm
-      const inlineConfirm = page.locator('.inline-confirm');
+      const inlineConfirm = page.locator('.inline-confirm').first();
       await expect(inlineConfirm).toBeVisible({ timeout: 3000 });
       await inlineConfirm.locator('.ic-confirm').click();
       await page.waitForTimeout(500);
 
       // Custom dialog confirm
-      const customDialog = page.locator('.fixed.inset-0.z-50');
-      if (await customDialog.isVisible({ timeout: 3000 })) {
-        await expect(customDialog).toContainText('Xác nhận xóa');
-        await customDialog.locator('button:has-text("Xóa ngay")').click();
-        await page.waitForSelector('.fixed.inset-0.z-50', { state: 'hidden', timeout: 10_000 });
+      const confirmDeleteBtn = page.locator('app-custom-dialog button:has-text("Xóa ngay")');
+      if (await confirmDeleteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await confirmDeleteBtn.click();
+        await page.waitForTimeout(2000);
       }
 
       await page.waitForTimeout(1500);

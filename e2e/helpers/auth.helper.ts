@@ -37,7 +37,7 @@ export async function goToExamSchedulePage(page: Page): Promise<void> {
 // ============================================================
 export const TEST_ACCOUNT = {
   username: 'root',       // <-- thay bằng tài khoản secretary thật
-  password: 'Abcd@1234',   // <-- thay bằng mật khẩu thật
+  password: 'Abc@1234',   // <-- thay bằng mật khẩu thật
 };
 
 export const TEST_DATA = {

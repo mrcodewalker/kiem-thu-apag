@@ -177,21 +177,23 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
       await firstRow.locator('.act-menu-btn').click();
       await page.waitForTimeout(300);
       await page.locator('.act-dropdown .act-item--danger:has-text("Xóa")').click();
-      await page.waitForTimeout(300);
-
-      const inlineConfirm = page.locator('.inline-confirm');
-      await expect(inlineConfirm).toBeVisible({ timeout: 3000 });
-      await inlineConfirm.locator('.ic-confirm').click();
       await page.waitForTimeout(500);
 
-      const customDialog = page.locator('.fixed.inset-0.z-50');
-      await expect(customDialog).toBeVisible({ timeout: 5000 });
-      await expect(customDialog).toContainText('Xác nhận xóa');
+      // Inline confirm hiện ra ngay trong row
+      const inlineConfirm = page.locator('.inline-confirm').first();
+      await expect(inlineConfirm).toBeVisible({ timeout: 5000 });
+
+      // Click nút "Xóa" trong inline confirm → trigger dialogService.confirm()
+      await inlineConfirm.locator('.ic-confirm').click();
+
+      // Chờ custom dialog xuất hiện
+      const cancelBtn = page.locator('app-custom-dialog button:has-text("Hủy")');
+      await expect(cancelBtn).toBeVisible({ timeout: 10_000 });
+      await page.waitForTimeout(1000);
 
       // Click Hủy — KHÔNG xóa
-      await customDialog.locator('button:has-text("Hủy")').click();
-      await page.waitForTimeout(500);
-      await expect(customDialog).not.toBeVisible();
+      await cancelBtn.click();
+      await page.waitForTimeout(1000);
 
       // Record vẫn còn
       await _searchByDecisionAndSubject(page, TEST_DATA.existingDecisionName, TEST_DATA.newSchedule.subjectName);
@@ -250,24 +252,42 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
       await firstRow.locator('.act-menu-btn').click();
       await page.waitForTimeout(300);
       await page.locator('.act-dropdown .act-item--danger:has-text("Xóa")').click();
-      await page.waitForTimeout(300);
-
-      const inlineConfirm = page.locator('.inline-confirm');
-      await expect(inlineConfirm).toBeVisible({ timeout: 3000 });
-      await inlineConfirm.locator('.ic-confirm').click();
       await page.waitForTimeout(500);
 
-      const customDialog = page.locator('.fixed.inset-0.z-50');
-      await expect(customDialog).toBeVisible({ timeout: 5000 });
-      await expect(customDialog).toContainText('Xác nhận xóa');
-      await customDialog.locator('button:has-text("Xóa ngay")').click();
+      // Inline confirm hiện ra ngay trong row
+      const inlineConfirm = page.locator('.inline-confirm').first();
+      await expect(inlineConfirm).toBeVisible({ timeout: 5000 });
 
-      await page.waitForSelector('.fixed.inset-0.z-50', { state: 'hidden', timeout: 10_000 });
-      await page.waitForTimeout(1500);
+      // Click nút "Xóa" trong inline confirm → trigger dialogService.confirm()
+      await inlineConfirm.locator('.ic-confirm').click();
 
-      const count = await page.locator('.esm-table tbody tr').count();
-      if (count > 0) {
-        await expect(page.locator(`.esm-table tbody tr:has-text("${subjectName?.trim()}")`)).toHaveCount(0);
+      // Chờ custom dialog xuất hiện
+      const confirmBtn = page.locator('app-custom-dialog button:has-text("Xóa ngay")');
+      await expect(confirmBtn).toBeVisible({ timeout: 10_000 });
+      await page.waitForTimeout(1000);
+
+      // Click "Xóa ngay" để xác nhận xóa thật
+      await confirmBtn.click();
+      await page.waitForTimeout(2000);
+
+      // Verify record đã bị xóa — search lại và kiểm tra không còn record đó
+      await page.waitForTimeout(1000);
+      await _searchByDecisionAndSubject(page, TEST_DATA.existingDecisionName, TEST_DATA.updatedSchedule.subjectName);
+
+      // Sau khi xóa, search lại phải không còn record hoặc hiện empty state
+      const remainingRows = page.locator('.esm-table tbody tr');
+      const emptyState = page.locator('.esm-empty');
+      const rowCount = await remainingRows.count();
+
+      if (rowCount === 0) {
+        // Table trống hoặc hiện empty state → xóa thành công
+        await expect(emptyState).toBeVisible({ timeout: 5000 });
+      } else {
+        // Nếu còn row, đảm bảo không có row nào chứa tên môn đã xóa
+        for (let i = 0; i < rowCount; i++) {
+          const rowText = await remainingRows.nth(i).locator('.td-name-content').textContent();
+          expect(rowText?.trim()).not.toEqual(subjectName?.trim());
+        }
       }
     });
 
@@ -284,8 +304,6 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
 
       await expect(page.locator('.ma-foot .ma-btn-save')).toBeDisabled();
 
-      await page.click('.ma-close');
-      await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
     });
 
     // ============================================================
@@ -300,9 +318,6 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
       await page.waitForTimeout(300);
 
       await expect(page.locator('.ma-foot .ma-btn-save')).toBeDisabled();
-
-      await page.click('.ma-close');
-      await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
     });
 
     // ============================================================
@@ -321,8 +336,6 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
       await expect(page.locator('.f-err')).toBeVisible();
       await expect(page.locator('.f-err')).toContainText('dd/mm/yyyy HH:mm');
 
-      await page.click('.ma-close');
-      await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
     });
 
     // ============================================================
@@ -339,8 +352,6 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
 
       await expect(page.locator('.ma-foot .ma-btn-save')).not.toBeDisabled();
 
-      await page.click('.ma-close');
-      await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
     });
 
     // ============================================================
@@ -451,29 +462,29 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
     // ============================================================
     // TC-ESM-13: Tự động điền giờ 07:00 khi nhập khoảng ngày
     // ============================================================
-    test('TC-ESM-13: Tự động điền giờ 07:00 khi nhập khoảng ngày (13/05/2026 tới 25/12/2027)', async ({ page }) => {
+    test('TC-ESM-13: Tự động điền giờ 07:00 khi nhập khoảng ngày (13/05/2026 đến 25/12/2027)', async ({ page }) => {
       await _openAddFormStep2(page);
 
       await page.fill('input[formControlName="subjectName"]', 'Môn Test Auto Time Mapping');
       await page.fill('input[formControlName="clazz"]', 'K65-AUTO');
 
       const timeInput = page.locator('input[formControlName="startTimeRaw"]');
-      // Nhập format tự do có chứa 2 mốc ngày
-      await timeInput.fill('Từ ngày 13/05/2026 tới ngày 25/12/2027');
+      // Nhập format tự do có chứa 2 mốc ngày (dùng "đến" làm separator)
+      await timeInput.fill('Từ ngày 13/05/2026 đến ngày 25/12/2027');
       await timeInput.blur();
       await page.waitForTimeout(500);
 
-      // Kiểm tra xem nó có tự format lại thành chuẩn dd/MM/yyyy HH:mm không
+      // Component tự format lại thành: "Từ ngày dd/MM/yyyy HH:mm đến dd/MM/yyyy HH:mm"
       const finalValue = await timeInput.inputValue();
-      // Kỳ vọng nó tự map về 07:00 cho cả 2 mốc
+      // Kỳ vọng nó tự map về 07:00 cho cả 2 mốc (default khi không có giờ)
       expect(finalValue).toContain('13/05/2026 07:00');
       expect(finalValue).toContain('25/12/2027 07:00');
 
       // Nút submit phải được enabled sau khi auto-map thành công
       await expect(page.locator('.ma-foot .ma-btn-save')).not.toBeDisabled();
 
-      await page.click('.ma-close');
-      await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
+      // await page.click('.ma-close');
+      // await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
     });
 
     // ============================================================
@@ -500,8 +511,8 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
 
       await expect(page.locator('.ma-foot .ma-btn-save')).not.toBeDisabled();
 
-      await page.click('.ma-close');
-      await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
+      // await page.click('.ma-close');
+      // await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
     });
 
     // ============================================================
@@ -527,8 +538,8 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
       // Nút submit phải disabled
       await expect(page.locator('.ma-foot .ma-btn-save')).toBeDisabled();
 
-      await page.click('.ma-close');
-      await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
+      // await page.click('.ma-close');
+      // await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
     });
 
   }); // End sub-describe

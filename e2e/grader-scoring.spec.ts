@@ -216,14 +216,12 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         await waitForAssignList(page);
         await selectRoom(page);
 
-        // Luôn dùng hàng đầu tiên — đọc điểm max từ header rồi random
-        // điểm khác với giá trị hiện tại để đảm bảo dirty state
         const firstRow = page.locator('.gs-table tbody tr').first();
         await expect(firstRow).toBeVisible({ timeout: 5000 });
 
         const inputs = firstRow.locator('.gs-score-inp');
 
-        // Đọc điểm max của từng cột từ header (vd: "/ 3" → 3)
+        // Đọc điểm max của từng cột từ header
         const maxLabels = page.locator('.gs-table thead th .gs-th-max');
         const colCount = await maxLabels.count();
         const maxScores: number[] = [];
@@ -232,24 +230,24 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
             maxScores.push(parseFloat(txt?.replace('/', '').trim() || '10'));
         }
 
-        // Đọc giá trị hiện tại của hàng đầu
+        // Đọc giá trị hiện tại
         const currentScores: number[] = [];
         for (let i = 0; i < colCount; i++) {
             const val = await inputs.nth(i).inputValue();
             currentScores.push(parseFloat(val) || 0);
         }
 
-        // Tạo điểm mới: random trong (0, max], khác với giá trị hiện tại
+        // Tạo điểm mới khác giá trị hiện tại
         const newScores = maxScores.map((max, i) => {
             const cur = currentScores[i];
-            // Nếu hiện tại < max thì tăng 1, ngược lại giảm 1
             const candidate = cur < max ? cur + 1 : cur - 1;
             return Math.max(0, Math.min(candidate, max));
         });
 
-        // Điền điểm mới vào từng ô
+        // Điền điểm — dùng triple-click + type để đảm bảo Angular (input) event fire
         for (let i = 0; i < newScores.length; i++) {
-            await inputs.nth(i).fill(String(newScores[i]));
+            await inputs.nth(i).click({ clickCount: 3 });
+            await page.keyboard.type(String(newScores[i]));
             await inputs.nth(i).press('Tab');
         }
         await page.waitForTimeout(300);
@@ -268,14 +266,11 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         const saveIcon = firstRow.locator('.gs-status-icon--dirty');
         await expect(saveIcon).toBeVisible();
 
-        // Lắng nghe toast TRƯỚC khi click để không bỏ lỡ
         const toastPromise = page.waitForSelector(
             '.p-toast-message-success',
             { state: 'visible', timeout: 10_000 }
         );
         await saveIcon.click();
-
-        // Chờ toast xuất hiện
         await toastPromise;
 
         // Icon đổi sang ok, hàng có class row-saved
@@ -289,7 +284,6 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         await waitForAssignList(page);
         await selectRoom(page);
 
-        // Dùng hàng thứ 2 (tránh hàng đã lưu ở TC-05)
         const targetRow = page.locator('.gs-table tbody tr').nth(1);
         const inputs = targetRow.locator('.gs-score-inp');
 
@@ -297,7 +291,8 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         const maxText = await page.locator('.gs-table thead th .gs-th-max').first().textContent();
         const maxVal = parseFloat(maxText?.replace('/', '').trim() || '3');
 
-        await inputs.nth(0).fill(String(maxVal + 5));
+        await inputs.nth(0).click({ clickCount: 3 });
+        await page.keyboard.type(String(maxVal + 5));
         await inputs.nth(0).press('Tab');
         await page.waitForTimeout(300);
 
@@ -313,8 +308,6 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
 
         // Nút gửi bị disabled
         await expect(page.locator('.gs-btn-submit').first()).toBeDisabled();
-
-
     });
 
     // ─── TC-GS-07 ───────────────────────────────────────────────
@@ -326,7 +319,8 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         const targetRow = page.locator('.gs-table tbody tr').nth(2);
         const firstInput = targetRow.locator('.gs-score-inp').first();
 
-        await firstInput.fill('abc');
+        await firstInput.click({ clickCount: 3 });
+        await page.keyboard.type('abc');
         await firstInput.press('Tab');
         await page.waitForTimeout(300);
 
@@ -335,7 +329,8 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         await expect(page.locator('.gs-error-chip')).toBeVisible();
 
         // Reset
-        await firstInput.fill('');
+        await firstInput.click({ clickCount: 3 });
+        await page.keyboard.press('Delete');
         await firstInput.press('Tab');
     });
 
@@ -349,24 +344,26 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         const inputs = targetRow.locator('.gs-score-inp');
 
         // Điền 2 cột, bỏ trống cột cuối
-        await inputs.nth(0).fill('2');
+        await inputs.nth(0).click({ clickCount: 3 });
+        await page.keyboard.type('2');
         await inputs.nth(0).press('Tab');
-        await inputs.nth(1).fill('3');
+        await inputs.nth(1).click({ clickCount: 3 });
+        await page.keyboard.type('3');
         await inputs.nth(1).press('Tab');
-        // Tab qua cột cuối mà không điền → trigger onScoreInput với giá trị rỗng
+        // Tab qua cột cuối mà không điền
         await inputs.nth(2).focus();
         await inputs.nth(2).press('Tab');
         await page.waitForTimeout(300);
 
-        // Nút gửi phải bị disabled (validDirtyCount === 0 vì có lỗi)
+        // Nút gửi phải bị disabled
         const submitBtn = page.locator('.gs-btn-submit').first();
         await expect(submitBtn).toBeDisabled();
 
-        // Dùng force:true để click bypass disabled — trigger saveAll() validate tất cả
+        // Force click để trigger validate
         await submitBtn.click({ force: true });
         await page.waitForTimeout(300);
 
-        // Phải có ít nhất 1 lỗi "Bắt buộc nhập" trên hàng đang test
+        // Phải có ít nhất 1 lỗi "Bắt buộc nhập"
         const errTips = targetRow.locator('.gs-inp-err-tip');
         let foundRequired = false;
         for (let i = 0; i < await errTips.count(); i++) {
@@ -377,13 +374,14 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         }
         expect(foundRequired).toBeTruthy();
 
-        // Nút vẫn disabled sau khi click
         await expect(submitBtn).toBeDisabled();
 
-        // Reset — xóa 2 ô đã điền để không ảnh hưởng TC sau
-        await inputs.nth(0).fill('');
+        // Reset
+        await inputs.nth(0).click({ clickCount: 3 });
+        await page.keyboard.press('Delete');
         await inputs.nth(0).press('Tab');
-        await inputs.nth(1).fill('');
+        await inputs.nth(1).click({ clickCount: 3 });
+        await page.keyboard.press('Delete');
         await inputs.nth(1).press('Tab');
     });
 
@@ -396,7 +394,8 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         const targetRow = page.locator('.gs-table tbody tr').nth(4);
         const firstInput = targetRow.locator('.gs-score-inp').first();
 
-        await firstInput.fill('-1');
+        await firstInput.click({ clickCount: 3 });
+        await page.keyboard.type('-1');
         await firstInput.press('Tab');
         await page.waitForTimeout(300);
 
@@ -404,7 +403,8 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         await expect(targetRow.locator('.gs-inp-err-tip').first()).toContainText('Không hợp lệ');
 
         // Reset
-        await firstInput.fill('');
+        await firstInput.click({ clickCount: 3 });
+        await page.keyboard.press('Delete');
         await firstInput.press('Tab');
     });
 
@@ -425,7 +425,8 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
 
             const inputs = row.locator('.gs-score-inp');
             for (let c = 0; c < VALID_SCORES_PARTIAL.length; c++) {
-                await inputs.nth(c).fill(VALID_SCORES_PARTIAL[c]);
+                await inputs.nth(c).click({ clickCount: 3 });
+                await page.keyboard.type(VALID_SCORES_PARTIAL[c]);
                 await inputs.nth(c).press('Tab');
             }
             await page.waitForTimeout(100);
@@ -695,7 +696,8 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
             const isSaved = await row.evaluate(el => el.classList.contains('row-saved'));
             if (isSaved) continue;
             const inputs = row.locator('.gs-score-inp');
-            await inputs.nth(0).fill('1');
+            await inputs.nth(0).click({ clickCount: 3 });
+            await page.keyboard.type('1');
             await inputs.nth(0).press('Tab');
             dirtied = true;
             break;

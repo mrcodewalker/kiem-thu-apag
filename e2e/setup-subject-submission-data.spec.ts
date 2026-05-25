@@ -8,7 +8,8 @@
  * LUỒNG THỰC HIỆN:
  *   SETUP-SS-01: Đăng nhập Secretary/Admin
  *   SETUP-SS-02: Tạo kế hoạch thi online (nếu chưa có)
- *   SETUP-SS-03: Thêm thí sinh CT070218 vào kế hoạch thi
+ *   SETUP-SS-03: Tạo phòng thi cho kế hoạch
+ *   SETUP-SS-04: Thêm thí sinh CT070218 vào phòng thi
  *
  * MỤC ĐÍCH:
  *   Sau khi chạy file này, sinh viên CT070218 sẽ có môn thi online
@@ -38,8 +39,12 @@ const SCHEDULE = {
     subjectCredits: '3',
     format: 'Bài tập lớn',
     onlineExam: 'x', // Phải là online để sinh viên nộp bài được
-    startTimeRaw: '01/06/2026 08:00 đến 30/06/2026 23:59',
+    startTimeRaw: '01/05/2026 08:00 đến 30/06/2026 23:59',
     note: 'Mock data — dùng cho kiểm thử nộp bài tập lớn',
+};
+
+const ROOM = {
+    roomName: 'Phòng BTL-CT07',
 };
 
 const STUDENT = {
@@ -113,60 +118,110 @@ test.describe.serial('Setup Mock Data — Nộp bài tập lớn', () => {
         });
 
         // ─── SETUP-SS-03 ─────────────────────────────────────────
-        test('SETUP-SS-03: Thêm thí sinh CT070218 vào kế hoạch thi', async ({ page }) => {
-            await page.goto('/dashboard/exam-schedules');
-            await page.waitForSelector('.esm-title', { state: 'visible', timeout: 10_000 });
+        test('SETUP-SS-03: Tạo phòng thi cho kế hoạch', async ({ page }) => {
+            await page.goto('/dashboard/exam-rooms');
+            await page.waitForSelector('.erm-title', { state: 'visible', timeout: 10_000 });
             await page.waitForTimeout(1000);
 
-            // Tìm kế hoạch thi vừa tạo
-            const decisionInput = page.locator('.filter-bar app-search-select input').first();
-            await decisionInput.click();
-            await decisionInput.fill(DECISION_NAME);
-            await decisionInput.press('Enter');
+            // Click "Thêm phòng mới"
+            await page.click('button:has-text("Thêm phòng mới")');
+            await expect(page.locator('.modal')).toBeVisible({ timeout: 5000 });
+
+            // Chọn quyết định thi trong modal
+            const modalDecInput = page.locator('.modal app-search-select').first().locator('input');
+            await modalDecInput.click();
+            await modalDecInput.fill(DECISION_NAME);
+            await modalDecInput.press('Enter');
             await page.waitForTimeout(800);
             const decOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
             if (await decOpt.isVisible({ timeout: 3000 })) await decOpt.click();
             await page.waitForTimeout(500);
 
-            // Tìm theo tên môn
-            const subjectInput = page.locator('.filter-bar input[placeholder*="môn"]').first();
-            await subjectInput.fill(SCHEDULE.subjectName);
-            await page.click('button.btn-search');
-            await page.waitForSelector('.skeleton-wrap', { state: 'hidden', timeout: 10_000 });
+            // Chọn kế hoạch thi trong modal
+            const modalSchInput = page.locator('.modal app-search-select').nth(1).locator('input');
+            await modalSchInput.click();
+            await modalSchInput.fill(SCHEDULE.subjectName);
+            await modalSchInput.press('Enter');
+            await page.waitForTimeout(800);
+            const schOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
+            if (await schOpt.isVisible({ timeout: 3000 })) await schOpt.click();
+            await page.waitForTimeout(500);
 
-            // Mở chi tiết kế hoạch thi
-            const firstRow = page.locator('.esm-table tbody tr').first();
-            await expect(firstRow).toBeVisible({ timeout: 5000 });
-            await firstRow.locator('.act-menu-btn').click();
-            await page.waitForTimeout(300);
-            await page.locator('.act-dropdown .act-item:has-text("Xem chi tiết")').click();
+            // Điền tên phòng
+            await page.fill('input[formControlName="roomName"]', ROOM.roomName);
 
-            // Chờ modal chi tiết mở
-            await expect(page.locator('.modal-xl')).toBeVisible({ timeout: 5000 });
+            // Gen mã phách tự động (bắt buộc nếu không phải secretary)
+            const genCoverBtn = page.locator('.modal .ma-btn-gen, .modal button:has-text("Tự động")');
+            if (await genCoverBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await genCoverBtn.click();
+                await page.waitForTimeout(500);
+            }
+
+            // Submit
+            const saveBtn = page.locator('.ma-foot .ma-btn-save');
+            await expect(saveBtn).not.toBeDisabled({ timeout: 3000 });
+            await saveBtn.click();
+            await page.waitForSelector('.modal', { state: 'hidden', timeout: 10_000 });
             await page.waitForTimeout(1000);
 
-            // Thêm thí sinh
-            const addStudentBtn = page.locator('button:has-text("Thêm sinh viên")');
-            if (await addStudentBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-                await addStudentBtn.click();
+            console.log(`✅ SETUP-SS-03: Đã tạo phòng thi "${ROOM.roomName}".`);
+        });
 
-                const addModal = page.locator('.modal').filter({ hasText: 'Thêm thí sinh' }).first();
-                await expect(addModal).toBeVisible({ timeout: 5000 });
+        // ─── SETUP-SS-04 ─────────────────────────────────────────
+        test('SETUP-SS-04: Thêm thí sinh CT070218 vào phòng thi', async ({ page }) => {
+            await page.goto('/dashboard/exam-rooms');
+            await page.waitForSelector('.erm-title', { state: 'visible', timeout: 10_000 });
+            await page.waitForTimeout(1000);
 
-                await addModal.locator('input[formControlName="studentCode"]').fill(STUDENT.studentCode);
-                await addModal.locator('input[formControlName="fullName"]').fill(STUDENT.fullName);
-                await addModal.locator('input[formControlName="dateOfBirth"]').fill(STUDENT.dateOfBirth);
-                await addModal.locator('input[formControlName="clazz"]').fill(STUDENT.clazz);
+            // Lọc theo quyết định thi
+            const filterDecInput = page.locator('.filter-bar app-search-select').first().locator('input');
+            await filterDecInput.click();
+            await filterDecInput.fill(DECISION_NAME);
+            await filterDecInput.press('Enter');
+            await page.waitForTimeout(800);
+            const decOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
+            if (await decOpt.isVisible({ timeout: 3000 })) await decOpt.click();
+            await page.waitForTimeout(500);
 
-                const saveBtn = addModal.locator('.ma-btn-save, button:has-text("Lưu"), button:has-text("Thêm")').first();
-                await expect(saveBtn).not.toBeDisabled();
-                await saveBtn.click();
-                await expect(addModal).not.toBeVisible({ timeout: 8000 });
+            // Lọc theo kế hoạch thi
+            const filterSchInput = page.locator('.filter-bar app-search-select').nth(1).locator('input');
+            await filterSchInput.click();
+            await filterSchInput.fill(SCHEDULE.subjectName);
+            await filterSchInput.press('Enter');
+            await page.waitForTimeout(800);
+            const schOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
+            if (await schOpt.isVisible({ timeout: 3000 })) await schOpt.click();
+            await page.waitForTimeout(1000);
 
-                console.log(`✅ SETUP-SS-03: Đã thêm thí sinh ${STUDENT.studentCode} vào kế hoạch thi.`);
-            } else {
-                console.log('⚠️ SETUP-SS-03: Không tìm thấy nút "Thêm sinh viên" — có thể đã có sẵn.');
-            }
+            // Chọn phòng thi trong sidebar
+            const roomItem = page.locator('.erc-room-item', { hasText: ROOM.roomName }).first();
+            await expect(roomItem).toBeVisible({ timeout: 5000 });
+            await roomItem.click();
+            await page.waitForTimeout(1000);
+
+            // Click "Thêm sinh viên"
+            const addStudentBtn = page.locator('button:has-text("Thêm sinh viên")').first();
+            await expect(addStudentBtn).toBeVisible({ timeout: 5000 });
+            await addStudentBtn.click();
+            await page.waitForTimeout(500);
+
+            // Modal thêm thí sinh hiện ra
+            await expect(page.locator('.ma-head-title:has-text("Thêm thí sinh")')).toBeVisible({ timeout: 5000 });
+
+            // Điền form thí sinh
+            await page.fill('input[formControlName="studentCode"]', STUDENT.studentCode);
+            await page.fill('input[formControlName="fullName"]', STUDENT.fullName);
+            await page.fill('input[formControlName="dateOfBirth"]', STUDENT.dateOfBirth);
+            await page.fill('input[formControlName="clazz"]', STUDENT.clazz);
+
+            // Submit
+            const saveBtn = page.locator('.ma-foot .ma-btn-save');
+            await expect(saveBtn).not.toBeDisabled({ timeout: 3000 });
+            await saveBtn.click();
+            await page.waitForSelector('.ma-head-title:has-text("Thêm thí sinh")', { state: 'hidden', timeout: 10_000 });
+            await page.waitForTimeout(1000);
+
+            console.log(`✅ SETUP-SS-04: Đã thêm thí sinh ${STUDENT.studentCode} (${STUDENT.fullName}) vào phòng "${ROOM.roomName}".`);
         });
     });
 });
