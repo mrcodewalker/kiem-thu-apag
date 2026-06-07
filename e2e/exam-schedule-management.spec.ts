@@ -361,11 +361,6 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
       await _searchByDecision(page, TEST_DATA.existingDecisionName);
       await page.waitForSelector('.skeleton-wrap', { state: 'hidden', timeout: 10_000 });
 
-      if (await page.locator('.esm-table tbody tr').count() === 0) {
-        test.skip();
-        return;
-      }
-
       // Nút settings mở panel chọn cột
       const colSelectorBtn = page.locator('button.btn-ghost.btn-icon[title="Chọn cột hiển thị"]');
       await expect(colSelectorBtn).toBeVisible();
@@ -384,18 +379,63 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
       const colCount = await checkboxes.count();
       expect(colCount).toBeGreaterThanOrEqual(5);
 
+      // Chọn checkbox "Mã môn học" để ẩn/hiện và kiểm tra
+      const subjectCodeItem = colPanel.locator('.col-check-item').filter({ hasText: /^Mã môn học$/ });
+      const subjectCodeCheckbox = subjectCodeItem.locator('input[type="checkbox"]');
+      const subjectCodeHeader = page.locator('.esm-table thead th:has-text("Mã môn")');
+
+      // Ban đầu phải visible và checked
+      await expect(subjectCodeCheckbox).toBeChecked();
+      await expect(subjectCodeHeader).toBeVisible();
+
+      // Click unchecked
+      await subjectCodeCheckbox.click();
+      await page.waitForTimeout(300);
+      await expect(subjectCodeCheckbox).not.toBeChecked();
+      await expect(subjectCodeHeader).not.toBeVisible();
+
+      // Click checked lại
+      await subjectCodeCheckbox.click();
+      await page.waitForTimeout(300);
+      await expect(subjectCodeCheckbox).toBeChecked();
+      await expect(subjectCodeHeader).toBeVisible();
+
       // Click "Ẩn tất cả" → tất cả checkbox phải unchecked (trừ cột cố định)
       await colPanel.locator('button:has-text("Ẩn tất cả")').click();
       await page.waitForTimeout(300);
 
-      // // Click "Hiện tất cả" → tất cả checkbox phải checked
-      // await colPanel.locator('button:has-text("Hiện tất cả")').click();
-      // await page.waitForTimeout(300);
-      // const checkedAfterShowAll = await colPanel.locator('.col-check-item input[type="checkbox"]:checked').count();
-      // expect(checkedAfterShowAll).toBeGreaterThan(0);
-      // // Click "Mặc định" → reset về trạng thái ban đầu
-      // await colPanel.locator('button:has-text("Mặc định")').click();
-      // await page.waitForTimeout(300);
+      // Kiểm tra tất cả checkbox: ID và Tên môn học phải checked, các cột khác phải unchecked
+      const count = await checkboxes.count();
+      for (let i = 0; i < count; i++) {
+        const item = checkboxes.nth(i);
+        const headerText = await item.locator('span').textContent();
+        const checkbox = item.locator('input[type="checkbox"]');
+        if (headerText?.trim() === 'ID' || headerText?.trim() === 'Tên môn học') {
+          await expect(checkbox).toBeChecked();
+        } else {
+          await expect(checkbox).not.toBeChecked();
+        }
+      }
+
+      // Kiểm tra hiển thị bảng: Chỉ còn ID, Tên môn học và Thao tác
+      const visibleHeaders = page.locator('.esm-table thead th');
+      const headerTexts = await visibleHeaders.allTextContents();
+      const cleanedHeaders = headerTexts.map(h => h.replace(/↑|↓/g, '').trim()).filter(h => h !== '');
+      expect(cleanedHeaders).toEqual(['ID', 'Tên môn học', 'Thao tác']);
+
+      // Click "Hiện tất cả"
+      await colPanel.locator('button:has-text("Hiện tất cả")').click();
+      await page.waitForTimeout(300);
+      await expect(subjectCodeCheckbox).toBeChecked();
+      await expect(subjectCodeHeader).toBeVisible();
+
+      // Click "Mặc định"
+      await colPanel.locator('button:has-text("Mặc định")').click();
+      await page.waitForTimeout(300);
+      const clazzItem = colPanel.locator('.col-check-item:has-text("Lớp")');
+      const clazzCheckbox = clazzItem.locator('input[type="checkbox"]');
+      await expect(clazzCheckbox).not.toBeChecked();
+
       // Đóng panel bằng cách click lại nút settings
       await colSelectorBtn.click();
       await expect(colPanel).not.toBeVisible();
@@ -405,16 +445,21 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
     // TC-ESM-12: Phân trang danh sách kế hoạch thi
     // ============================================================
     test('TC-ESM-12: Phân trang danh sách kế hoạch thi', async ({ page }) => {
+      await _searchByDecision(page, TEST_DATA.existingDecisionName);
       await page.waitForSelector('.skeleton-wrap', { state: 'hidden', timeout: 10_000 });
 
       const pgInfo = page.locator('.pg-info');
+      if (await pgInfo.count() === 0) {
+        test.skip();
+        return;
+      }
       const totalText = await pgInfo.textContent();
       if (!totalText || !totalText.includes('kế hoạch thi')) {
         test.skip();
         return;
       }
 
-      // Đổi số dòng/trang sang 5 — dùng value number vì Angular dùng [ngValue]="5"
+      // Đổi số dòng/trang sang 5
       const rowsSelect = page.locator('.f-select-sm');
       await rowsSelect.selectOption({ value: '5' });
       await page.waitForSelector('.skeleton-wrap', { state: 'hidden', timeout: 10_000 });
@@ -427,36 +472,24 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
       await expect(pgInfo).toBeVisible();
       await expect(pgInfo).toContainText('kế hoạch thi');
 
-      // Nếu có nhiều hơn 5 record → test chuyển trang
-      // Nút trang tiếp: pg-controls có 4 nút (đầu, trước, sau, cuối)
+      // Nút trang tiếp
       const pgBtns = page.locator('.pg-controls .pg-btn');
-      const nextBtn = pgBtns.nth(2); // nút ">"
+      const nextBtn = pgBtns.nth(2);
 
       if (await nextBtn.isEnabled()) {
         const firstRowPage1 = await page.locator('.esm-table tbody tr').first().textContent();
-
-        // Sang trang 2
         await nextBtn.click();
         await page.waitForSelector('.skeleton-wrap', { state: 'hidden', timeout: 10_000 });
-
-        // Nội dung trang 2 khác trang 1
         const firstRowPage2 = await page.locator('.esm-table tbody tr').first().textContent();
         expect(firstRowPage2).not.toEqual(firstRowPage1);
 
-        // Nút trang trước phải enabled
         const prevBtn = pgBtns.nth(1);
         await expect(prevBtn).toBeEnabled();
-
-        // Quay lại trang 1
         await prevBtn.click();
         await page.waitForSelector('.skeleton-wrap', { state: 'hidden', timeout: 10_000 });
         const firstRowBack = await page.locator('.esm-table tbody tr').first().textContent();
         expect(firstRowBack).toEqual(firstRowPage1);
       }
-
-      // // Reset về 10 dòng/trang
-      // await rowsSelect.selectOption({ value: '10' });
-      // await page.waitForTimeout(500);
     });
 
     // ============================================================
@@ -474,17 +507,18 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
       await timeInput.blur();
       await page.waitForTimeout(500);
 
-      // Component tự format lại thành: "Từ ngày dd/MM/yyyy HH:mm đến dd/MM/yyyy HH:mm"
+      // BUG PHÁT HIỆN: Khi nhập ngày mà không có giờ, hệ thống tự động gán 07:00
+      // Kỳ vọng: nếu user không nhập giờ, hệ thống nên gán 00:00 (midnight) — đây là convention chuẩn
+      //   vì 00:00 đại diện cho "đầu ngày" và không giả định giờ thi cụ thể
+      // Thực tế: hệ thống gán 07:00 (giờ hành chính) — đây là assumption không hợp lý
+      //   vì không phải tất cả kỳ thi đều bắt đầu lúc 7h sáng
+      // → Lỗi logic: default time nên là 00:00 thay vì 07:00 để tránh tạo lịch thi sai giờ
       const finalValue = await timeInput.inputValue();
-      // Kỳ vọng nó tự map về 07:00 cho cả 2 mốc (default khi không có giờ)
-      expect(finalValue).toContain('13/05/2026 07:00');
-      expect(finalValue).toContain('25/12/2027 07:00');
+      expect(finalValue).toContain('13/05/2026 00:00');
+      expect(finalValue).toContain('25/12/2027 00:00');
 
       // Nút submit phải được enabled sau khi auto-map thành công
       await expect(page.locator('.ma-foot .ma-btn-save')).not.toBeDisabled();
-
-      // await page.click('.ma-close');
-      // await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
     });
 
     // ============================================================
@@ -510,9 +544,6 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
       expect(finalValue).toContain('đến');
 
       await expect(page.locator('.ma-foot .ma-btn-save')).not.toBeDisabled();
-
-      // await page.click('.ma-close');
-      // await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
     });
 
     // ============================================================
@@ -537,9 +568,6 @@ test.describe.serial('Quản lý Kế hoạch thi (Exam Schedule Management)', (
 
       // Nút submit phải disabled
       await expect(page.locator('.ma-foot .ma-btn-save')).toBeDisabled();
-
-      // await page.click('.ma-close');
-      // await page.waitForSelector('.modal', { state: 'hidden', timeout: 5000 });
     });
 
   }); // End sub-describe
@@ -560,15 +588,14 @@ async function _searchByDecisionAndSubject(page: Page, decisionName: string, sub
 async function _searchByDecision(page: Page, decisionName: string): Promise<void> {
   const decisionInput = page.locator('.filter-bar app-search-select input').first();
   await decisionInput.click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(500);
   await decisionInput.fill(decisionName);
   await decisionInput.press('Enter');
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(500);
 
-  const opt = page.locator('.ss-opt, [class*="ss-option"]').first();
-  if (await opt.isVisible({ timeout: 3000 })) {
-    await opt.click();
-  }
+  const opt = page.locator('.ss-opt, [class*="ss-option"], .ss-list > div').first();
+  await expect(opt).toBeVisible({ timeout: 5000 });
+  await opt.click();
   await page.waitForTimeout(500);
   await page.waitForSelector('.skeleton-wrap', { state: 'hidden', timeout: 10_000 });
 }
@@ -582,10 +609,11 @@ async function _openAddFormStep2(page: Page): Promise<void> {
   await modalDecisionInput.click();
   await modalDecisionInput.fill(TEST_DATA.existingDecisionName);
   await modalDecisionInput.press('Enter');
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(500);
 
-  const opt = page.locator('.ss-opt, [class*="ss-option"]').first();
-  if (await opt.isVisible({ timeout: 3000 })) await opt.click();
+  const opt = page.locator('.ss-opt, [class*="ss-option"], .ss-list > div').first();
+  await expect(opt).toBeVisible({ timeout: 5000 });
+  await opt.click();
   await page.waitForTimeout(500);
 
   await expect(page.locator('.ma-head-title')).toContainText('Thêm kế hoạch thi');

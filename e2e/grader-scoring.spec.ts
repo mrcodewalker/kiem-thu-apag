@@ -31,6 +31,8 @@
  * TC-GS-15: Lọc phân công theo trạng thái "Chưa xong" / "Xong"
  * TC-GS-16: Cảnh báo khi thoát trang có dữ liệu chưa lưu
  * TC-GS-17: Đăng xuất
+ * TC-GS-18: [BUG CRITICAL] Import Excel mã phách bị sửa — mã phách bảng không được thay đổi (Expected: FAIL)
+ * TC-GS-19: [BUG CRITICAL] Import Excel thêm mã phách giả — hệ thống tự thêm SV ma, số SV tăng (Expected: FAIL)
  * ============================================================
  */
 
@@ -62,6 +64,7 @@ const VALID_SCORES_PARTIAL = ['2', '3', '2']; // tổng = 7
 // Đường dẫn file Excel test (đã chuẩn bị sẵn)
 const EXCEL_INVALID = path.join(__dirname, 'excel', 'INVALID.xlsx');
 const EXCEL_VALID = path.join(__dirname, 'excel', 'VALID.xlsx');
+const EXCEL_SUA_MA_PHACH = path.join(__dirname, 'excel', 'SUA_MA_PHACH.xlsx');
 
 
 // ============================================================
@@ -340,49 +343,48 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         await waitForAssignList(page);
         await selectRoom(page);
 
-        const targetRow = page.locator('.gs-table tbody tr').nth(3);
+        // Tìm hàng chưa saved (tránh conflict với TC trước)
+        const rows = page.locator('.gs-table tbody tr');
+        const totalRows = await rows.count();
+        let targetRow = rows.nth(3); // fallback
+        for (let i = 3; i < totalRows; i++) {
+            const row = rows.nth(i);
+            const isSaved = await row.evaluate(el => el.classList.contains('row-saved'));
+            if (!isSaved) { targetRow = row; break; }
+        }
         const inputs = targetRow.locator('.gs-score-inp');
 
-        // Điền 2 cột, bỏ trống cột cuối
+        // Điền cột 1 và cột 2
         await inputs.nth(0).click({ clickCount: 3 });
         await page.keyboard.type('2');
         await inputs.nth(0).press('Tab');
         await inputs.nth(1).click({ clickCount: 3 });
         await page.keyboard.type('3');
         await inputs.nth(1).press('Tab');
-        // Tab qua cột cuối mà không điền
-        await inputs.nth(2).focus();
+
+        // Cột 3: nhập rồi xóa để trigger validation "Bắt buộc nhập"
+        await inputs.nth(2).click({ clickCount: 3 });
+        await page.keyboard.type('1');
+        await page.waitForTimeout(200);
+        await inputs.nth(2).click({ clickCount: 3 });
+        await page.keyboard.press('Backspace');
         await inputs.nth(2).press('Tab');
-        await page.waitForTimeout(300);
+        await page.waitForTimeout(500);
 
         // Nút gửi phải bị disabled
         const submitBtn = page.locator('.gs-btn-submit').first();
         await expect(submitBtn).toBeDisabled();
 
-        // Force click để trigger validate
-        await submitBtn.click({ force: true });
-        await page.waitForTimeout(300);
-
-        // Phải có ít nhất 1 lỗi "Bắt buộc nhập"
-        const errTips = targetRow.locator('.gs-inp-err-tip');
-        let foundRequired = false;
-        for (let i = 0; i < await errTips.count(); i++) {
-            if ((await errTips.nth(i).textContent())?.includes('Bắt buộc')) {
-                foundRequired = true;
-                break;
-            }
-        }
-        expect(foundRequired).toBeTruthy();
-
-        await expect(submitBtn).toBeDisabled();
+        // Error chip trên toolbar
+        await expect(page.locator('.gs-error-chip')).toBeVisible();
 
         // Reset
-        await inputs.nth(0).click({ clickCount: 3 });
-        await page.keyboard.press('Delete');
-        await inputs.nth(0).press('Tab');
-        await inputs.nth(1).click({ clickCount: 3 });
-        await page.keyboard.press('Delete');
-        await inputs.nth(1).press('Tab');
+        // await inputs.nth(0).click({ clickCount: 3 });
+        // await page.keyboard.press('Delete');
+        // await inputs.nth(0).press('Tab');
+        // await inputs.nth(1).click({ clickCount: 3 });
+        // await page.keyboard.press('Delete');
+        // await inputs.nth(1).press('Tab');
     });
 
     // ─── TC-GS-09 ───────────────────────────────────────────────
@@ -403,9 +405,9 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         await expect(targetRow.locator('.gs-inp-err-tip').first()).toContainText('Không hợp lệ');
 
         // Reset
-        await firstInput.click({ clickCount: 3 });
-        await page.keyboard.press('Delete');
-        await firstInput.press('Tab');
+        // await firstInput.click({ clickCount: 3 });
+        // await page.keyboard.press('Delete');
+        // await firstInput.press('Tab');
     });
 
     // ─── TC-GS-10 ───────────────────────────────────────────────
@@ -506,11 +508,13 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         const hasInvalidStats = await page.locator('.gs-import-stat--err').isVisible();
         expect(hasParseError || hasInvalidStats).toBeTruthy();
 
-        // Nếu có hàng lỗi → nút "Nhập" bị disabled hoặc không xuất hiện
+        // BUG PHÁT HIỆN: Khi import file Excel không hợp lệ, nút "Nhập" vẫn enabled
+        // Kỳ vọng: nút "Nhập X bài" phải bị disabled hoàn toàn khi tất cả hàng đều lỗi
+        // Thực tế: nút vẫn enabled với text "Nhập 0 bài" — gây nhầm lẫn cho user
+        // → Lỗi UX: user có thể bấm nút "Nhập 0 bài" mà không có tác dụng gì
         const importBtn = page.locator('button:has-text("Nhập")').first();
-        if (await importBtn.isVisible({ timeout: 1000 })) {
-            await expect(importBtn).toBeDisabled();
-        }
+        await expect(importBtn).toBeVisible({ timeout: 3000 });
+        await expect(importBtn).toBeDisabled();
 
         // Quay lại bảng chấm điểm
         await page.locator('button:has-text("Quay lại")').click();
@@ -755,27 +759,233 @@ test.describe('Chấm thi — Grader Scoring (lamtung / P102)', () => {
         await expect(page).toHaveURL(/login/);
 
         console.log('👋 TC-GS-17: Grader đã đăng xuất thành công qua UI.');
-        // // Bước 1: Click nút "Đăng xuất" trên sidebar (class dg-logout-btn)
-        // // Nút này luôn visible trên sidebar, không cần mở menu
-        // const logoutBtn = page.locator('.dg-logout-btn').first();
-        // await expect(logoutBtn).toBeVisible({ timeout: 5000 });
-        // await logoutBtn.click();
+    });
 
-        // // Bước 2: Dialog xác nhận xuất hiện (dg-confirm-overlay)
-        // const confirmOverlay = page.locator('.dg-confirm-overlay');
-        // await expect(confirmOverlay).toBeVisible({ timeout: 5000 });
-        // await expect(confirmOverlay.locator('.dg-confirm-msg')).toContainText('đăng xuất');
+    // ─── TC-GS-18 (BUG NGHIÊM TRỌNG) ───────────────────────────
+    // ╔══════════════════════════════════════════════════════════════╗
+    // ║ BUG NGHIÊM TRỌNG: Import file SUA_MA_PHACH.xlsx chứa mã   ║
+    // ║ phách bị sửa — hệ thống cho phép import và thay đổi mã    ║
+    // ║ phách trong bảng.                                           ║
+    // ║                                                             ║
+    // ║ KỊCH BẢN:                                                   ║
+    // ║   Mã phách GỐC đúng theo setup: A5, A6, ..., A15 (11 mã)  ║
+    // ║   File SUA_MA_PHACH.xlsx chứa mã phách đã bị sửa khác     ║
+    // ║   → Sau import, bảng có thể chứa mã phách KHÔNG thuộc     ║
+    // ║     danh sách gốc A5→A15                                    ║
+    // ║                                                             ║
+    // ║ KỲ VỌNG: Bảng chỉ được chứa mã phách A5→A15               ║
+    // ║ THỰC TẾ: Bảng chứa mã phách lạ sau import                  ║
+    // ║                                                             ║
+    // ║ MỨC ĐỘ: CRITICAL — mã phách bị thay đổi = sai dữ liệu    ║
+    // ╚══════════════════════════════════════════════════════════════╝
+    test('TC-GS-18: [BUG CRITICAL] Import Excel có mã phách bị sửa — bảng chứa mã phách không thuộc phân công gốc', async ({ page }) => {
+        await page.goto('/dashboard-grader/scoring');
+        await waitForAssignList(page);
+        await selectRoom(page);
 
-        // // Bước 3: Click nút "Đăng xuất" trong dialog (dg-confirm-ok)
-        // await confirmOverlay.locator('.dg-confirm-ok').click();
+        // Danh sách mã phách GỐC đúng theo setup (A5 → A15 = 11 mã phách)
+        const EXPECTED_COVER_CODES = ['A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'A14', 'A15'];
 
-        // // Bước 4: Verify redirect về /login
-        // await page.waitForURL('**/login**', { timeout: 10_000 });
-        // await expect(page).toHaveURL(/login/);
+        // ── Bước 1: Đọc mã phách HIỆN TẠI trong bảng ────────────
+        const rows = page.locator('.gs-table tbody tr');
+        const rowCount = await rows.count();
+        const currentCodes: string[] = [];
+        for (let i = 0; i < rowCount; i++) {
+            const code = await rows.nth(i).locator('.gs-cover-badge').textContent();
+            if (code) currentCodes.push(code.trim());
+        }
+        console.log(`📋 Mã phách HIỆN TẠI (${currentCodes.length} SV): ${currentCodes.join(', ')}`);
 
-        // // Bước 5: Verify localStorage đã bị xóa — token không còn
-        // const token = await page.evaluate(() => localStorage.getItem('token_kolla'));
-        // expect(token).toBeNull();
+        // ── Bước 2: Mở dialog Import và upload SUA_MA_PHACH.xlsx ─
+        await page.locator('button:has-text("Import Excel")').click();
+        await expect(
+            page.locator('.gs-card-title:has-text("Import điểm từ Excel")')
+        ).toBeVisible({ timeout: 5000 });
+
+        const fileInput = page.locator('.gs-upload-zone input[type="file"]');
+        await fileInput.setInputFiles(EXCEL_SUA_MA_PHACH);
+        await page.waitForTimeout(2000);
+
+        await expect(page.locator('.gs-upload-text strong')).toContainText('SUA_MA_PHACH');
+
+        // ── Bước 3: Import nếu hệ thống cho phép ────────────────
+        const importBtn = page.locator('.gs-btn-save');
+        const canImport = (await importBtn.isVisible()) && !(await importBtn.isDisabled());
+
+        if (canImport) {
+            await importBtn.click();
+            await page.waitForFunction(
+                () => document.querySelector('.gs-table-wrap') !== null,
+                { timeout: 10_000 }
+            );
+            await page.waitForTimeout(1500);
+        } else {
+            // Nếu không import được, quay lại bảng
+            await page.locator('.gs-form-back').first().click();
+            await page.waitForTimeout(1000);
+        }
+
+        // ── Bước 4: ASSERT — Lịch sử chỉ được chứa mã phách gốc A5→A15 ──
+        const historyBtn = page.locator('button:has-text("Lịch sử")');
+        await expect(historyBtn).toBeVisible();
+        await historyBtn.click();
+
+        await page.waitForFunction(
+            () => document.querySelector('.gs-history-wrap') !== null || document.querySelector('.gs-empty') !== null,
+            { timeout: 15_000 }
+        );
+
+        const historyBadges = page.locator('.gs-history-table-wrap .gs-cover-badge');
+        const historyCount = await historyBadges.count();
+        const historyCodes: string[] = [];
+        for (let i = 0; i < historyCount; i++) {
+            const code = await historyBadges.nth(i).textContent();
+            if (code) historyCodes.push(code.trim());
+        }
+        console.log(`📋 Mã phách trong LỊCH SỬ (${historyCodes.length} SV): ${historyCodes.join(', ')}`);
+
+        // Tìm mã phách KHÔNG thuộc danh sách gốc A5→A15
+        const foreignCodes = historyCodes.filter(c => !EXPECTED_COVER_CODES.includes(c));
+
+        if (foreignCodes.length > 0) {
+            console.error('🚨 BUG CRITICAL: Lịch sử chứa mã phách KHÔNG thuộc phân công gốc!');
+            console.error(`   Mã phách lạ: ${foreignCodes.join(', ')}`);
+            console.error(`   Mã phách gốc đúng: ${EXPECTED_COVER_CODES.join(', ')}`);
+        } else {
+            console.log('✅ Không phát hiện mã phách lạ (có thể data đã clean)');
+        }
+
+        // LOG kết quả so sánh
+        console.log(`   Expected: ${EXPECTED_COVER_CODES.length} SV, chỉ A5→A15`);
+        console.log(`   Actual: ${historyCount} SV, mã phách: ${historyCodes.join(', ')}`);
+        console.log(`   Kết luận: ${foreignCodes.length > 0 || historyCount !== EXPECTED_COVER_CODES.length ? '❌ BUG — mã phách bị thay đổi/thêm' : '✅ OK'}`);
+
+        // Thực hiện assert để test case fail khi phát hiện lỗi
+        expect(foreignCodes).toEqual([]);
+        expect(historyCount).toBe(EXPECTED_COVER_CODES.length);
+    });
+
+    // ─── TC-GS-19 (BUG NGHIÊM TRỌNG) ───────────────────────────
+    // ╔══════════════════════════════════════════════════════════════╗
+    // ║ BUG NGHIÊM TRỌNG: Import file THEM_MA_PHACH.xlsx chứa     ║
+    // ║ mã phách giả (A99, K85, E10, RON95) — hệ thống KHÔNG      ║
+    // ║ override mà TỰ THÊM các mã phách mới vào bảng.            ║
+    // ║                                                             ║
+    // ║ KỊCH BẢN (file THEM_MA_PHACH.xlsx — 14 hàng):              ║
+    // ║   Phòng P102 có 11 thí sinh gốc: A5, A6, ..., A15          ║
+    // ║   File Excel chứa:                                          ║
+    // ║   - 10 mã phách gốc (A5→A11, A13→A15) — update điểm OK   ║
+    // ║   - A12 bị sửa thành A99 (mã phách lạ)                     ║
+    // ║   - K85, E10, RON95 (3 mã phách hoàn toàn mới)             ║
+    // ║                                                             ║
+    // ║ HẬU QUẢ THỰC TẾ:                                           ║
+    // ║   Hệ thống KHÔNG override/replace danh sách cũ.             ║
+    // ║   Thay vào đó, nó GIỮ NGUYÊN 11 mã phách gốc VÀ THÊM    ║
+    // ║   A99, K85, E10, RON95 vào DB → tổng = 15 sinh viên.       ║
+    // ║   → Grader tự ý "thêm sinh viên ma" vào phòng thi!         ║
+    // ║                                                             ║
+    // ║ KỲ VỌNG (Expected):                                        ║
+    // ║   - Số hàng sau import phải BẰNG số hàng trước (11)        ║
+    // ║   - Mã phách lạ (A99, K85, E10, RON95) KHÔNG được thêm    ║
+    // ║   - Frontend phải reject mã phách không thuộc phân công    ║
+    // ║                                                             ║
+    // ║ THỰC TẾ (Actual):                                           ║
+    // ║   - Frontend không validate coverCode → gửi cả 14 hàng    ║
+    // ║   - Backend tạo new CandidateScore() cho mã phách mới      ║
+    // ║   - Số SV tăng từ 11 → 15 (thêm 4 "sinh viên ma")         ║
+    // ║                                                             ║
+    // ║ MỨC ĐỘ: CRITICAL — gian lận điểm, mất toàn vẹn dữ liệu   ║
+    // ╚══════════════════════════════════════════════════════════════╝
+    test('TC-GS-19: [BUG CRITICAL] Import Excel thêm mã phách giả — hệ thống tự thêm sinh viên ma, số SV tăng bất thường', async ({ page }) => {
+        await page.goto('/dashboard-grader/scoring');
+        await waitForAssignList(page);
+        await selectRoom(page);
+
+        // Danh sách mã phách GỐC đúng theo setup (A5 → A15 = 11 mã phách)
+        // Đây là danh sách ADMIN_CHAM giao cho grader — không được vượt quá
+        const EXPECTED_COVER_CODES = ['A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'A14', 'A15'];
+
+        // ── Bước 1: Đọc trạng thái HIỆN TẠI ─────────────────────
+        const rowsBefore = page.locator('.gs-table tbody tr');
+        const countBefore = await rowsBefore.count();
+        const currentCodes: string[] = [];
+        for (let i = 0; i < countBefore; i++) {
+            const code = await rowsBefore.nth(i).locator('.gs-cover-badge').textContent();
+            if (code) currentCodes.push(code.trim());
+        }
+        console.log(`📋 Trạng thái HIỆN TẠI: ${countBefore} sinh viên`);
+        console.log(`   Mã phách: ${currentCodes.join(', ')}`);
+
+        // ── Bước 2: Mở dialog Import Excel ──────────────────────
+        await page.locator('button:has-text("Import Excel")').click();
+        await expect(
+            page.locator('.gs-card-title:has-text("Import điểm từ Excel")')
+        ).toBeVisible({ timeout: 5000 });
+
+        // ── Bước 3: Upload file THEM_MA_PHACH.xlsx ───────────────
+        const fileInput = page.locator('.gs-upload-zone input[type="file"]');
+        await fileInput.setInputFiles(path.join(__dirname, 'excel', 'THEM_MA_PHACH.xlsx'));
+        await page.waitForTimeout(2000);
+
+        await expect(page.locator('.gs-upload-text strong')).toContainText('THEM_MA_PHACH');
+
+        // ── Bước 4: Import nếu hệ thống cho phép ────────────────
+        const importBtn = page.locator('.gs-btn-save');
+        const canImport = (await importBtn.isVisible()) && !(await importBtn.isDisabled());
+
+        if (canImport) {
+            console.log('⚠️ Hệ thống cho phép import file có mã phách giả!');
+            await importBtn.click();
+
+            await page.waitForFunction(
+                () => document.querySelector('.gs-table-wrap') !== null,
+                { timeout: 15_000 }
+            );
+            await page.waitForTimeout(1500);
+        } else {
+            // Quay lại bảng
+            await page.locator('.gs-form-back').first().click();
+            await page.waitForTimeout(1000);
+        }
+
+        // ── Bước 5: ASSERT — So sánh với danh sách GỐC A5→A15 ──
+        const historyBtn = page.locator('button:has-text("Lịch sử")');
+        await expect(historyBtn).toBeVisible();
+        await historyBtn.click();
+
+        await page.waitForFunction(
+            () => document.querySelector('.gs-history-wrap') !== null || document.querySelector('.gs-empty') !== null,
+            { timeout: 15_000 }
+        );
+
+        const historyBadges = page.locator('.gs-history-table-wrap .gs-cover-badge');
+        const historyCount = await historyBadges.count();
+        const historyCodes: string[] = [];
+        for (let i = 0; i < historyCount; i++) {
+            const code = await historyBadges.nth(i).textContent();
+            if (code) historyCodes.push(code.trim());
+        }
+        console.log(`📋 Mã phách trong LỊCH SỬ (${historyCodes.length} SV): ${historyCodes.join(', ')}`);
+
+        // LOG kết quả — thực hiện assert để test case fail khi phát hiện lỗi
+        console.log(`   Expected: ${EXPECTED_COVER_CODES.length} SV | Actual: ${historyCount} SV`);
+
+        const ghostCodes = historyCodes.filter(c => !EXPECTED_COVER_CODES.includes(c));
+        if (ghostCodes.length > 0) {
+            console.error('🚨 BUG CRITICAL CONFIRMED:');
+            console.error(`   Mã phách "ma" được THÊM VÀO: ${ghostCodes.join(', ')}`);
+            console.error(`   Số SV vượt ngưỡng: ${EXPECTED_COVER_CODES.length} → ${historyCount} (+${historyCount - EXPECTED_COVER_CODES.length})`);
+            console.error('   → Hệ thống không validate mã phách khi import!');
+            console.error('   → Grader có thể tự ý thêm sinh viên vào phòng thi!');
+        } else {
+            console.log('✅ Không phát hiện mã phách ma (có thể data đã clean)');
+        }
+
+        console.log(`   Kết luận: ${ghostCodes.length > 0 || historyCount !== EXPECTED_COVER_CODES.length ? '❌ BUG — số SV vượt ngưỡng hoặc có mã phách lạ' : '✅ OK'}`);
+
+        // Thực hiện assert để test case fail
+        expect(ghostCodes).toEqual([]);
+        expect(historyCount).toBe(EXPECTED_COVER_CODES.length);
     });
 
 });

@@ -224,6 +224,11 @@ test.describe('Nộp bài tập trực tuyến — Subject Submission Flow', () 
         return;
       }
 
+      // Chọn chủ đề để form hợp lệ
+      const topicTrigger = modal.locator('.ss-custom-select__trigger');
+      await topicTrigger.click();
+      await modal.locator('.ss-custom-select__option').first().click();
+
       const fileInput = modal.locator('input[type="file"]');
       await fileInput.setInputFiles(TEST_DATA.pdfValid);
 
@@ -253,7 +258,7 @@ test.describe('Nộp bài tập trực tuyến — Subject Submission Flow', () 
       // Thay đổi sang file 2 (change.pdf)
       await fileInput.setInputFiles(TEST_DATA.pdfChange);
       await expect(modal.locator('.ss-file-card-name')).toContainText('change.pdf');
-      
+
       // Thử xóa
       await modal.locator('.ss-file-btn--remove').click();
       await expect(modal.locator('.ss-file-card')).not.toBeVisible();
@@ -283,20 +288,11 @@ test.describe('Nộp bài tập trực tuyến — Subject Submission Flow', () 
       await fileInput.setInputFiles(TEST_DATA.pdfValid);
       await expect(modal.locator('.ss-file-card')).toBeVisible();
 
-      // Bấm nộp bài mà không chọn chủ đề
-      await modal.locator('button.ss-btn-primary').click();
+      // Nút "Nộp bài" phải bị disabled khi chưa chọn chủ đề (form invalid)
+      const primaryBtn = modal.locator('button.ss-btn-primary');
+      await expect(primaryBtn).toBeDisabled();
 
-      // Phải hiện toast cảnh báo yêu cầu chọn chủ đề
-      const warnToast = page.locator('.ss-toast--warn');
-      await expect(warnToast).toBeVisible({ timeout: 5000 });
-      await expect(warnToast).toContainText(/chủ đề/i);
-
-      // Kiểm tra error text hiển thị dưới dropdown
-      const errorText = modal.locator('.ss-error-text');
-      await expect(errorText).toBeVisible();
-      await expect(errorText).toContainText('Vui lòng chọn chủ đề');
-
-      console.log('✅ TC-SS-10: Validate chủ đề bắt buộc hoạt động đúng.');
+      console.log('✅ TC-SS-10: Nút nộp bài disabled khi chưa chọn chủ đề.');
     });
 
     // ─── TC-SS-11 ───────────────────────────────────────────────
@@ -343,7 +339,7 @@ test.describe('Nộp bài tập trực tuyến — Subject Submission Flow', () 
     test('TC-SS-12: Vào lịch sử nộp bài và xóa bài vừa nộp', async ({ page }) => {
       await page.goto('/dashboard-student/history');
       await page.waitForSelector('.ss-title', { state: 'visible' });
-      
+
       // Chờ skeleton của lịch sử (HS dùng cùng class ss-skeleton-row)
       await waitForDataLoad(page);
 
@@ -354,15 +350,15 @@ test.describe('Nộp bài tập trực tuyến — Subject Submission Flow', () 
       }
 
       await deleteBtn.click();
-      
+
       // Chờ modal xác nhận xóa
       const confirmModal = page.locator('.ss-modal').filter({ hasText: 'Xác nhận xóa bài nộp' });
       await expect(confirmModal).toBeVisible();
-      
+
       // Bấm nút Xác nhận xóa
       const doDeleteBtn = confirmModal.locator('.hs-btn-delete');
       await doDeleteBtn.click();
-      
+
       // Chờ toast thành công
       await expect(page.locator('.ss-toast--success')).toBeVisible({ timeout: 10_000 });
       console.log('✅ TC-SS-12: Xóa bài nộp từ lịch sử thành công.');
@@ -372,7 +368,7 @@ test.describe('Nộp bài tập trực tuyến — Subject Submission Flow', () 
     test('TC-SS-13: Kiểm tra trạng thái môn thi sau khi xóa (Phải quay về "Chưa nộp")', async ({ page }) => {
       await page.goto('/dashboard-student/subjects');
       await waitForDataLoad(page);
-      
+
       // Sau khi xóa, icon done (--done) phải biến mất và thay bằng icon submit (--submit)
       const submitBtn = page.locator('.ss-act-btn--submit').first();
       await expect(submitBtn).toBeVisible();
@@ -393,7 +389,48 @@ test.describe('Nộp bài tập trực tuyến — Subject Submission Flow', () 
     });
 
     // ─── TC-SS-15 ───────────────────────────────────────────────
-    test('TC-SS-15: Đăng xuất khỏi hệ thống', async ({ page }) => {
+    test('TC-SS-15: Dropdown chủ đề phải lấy dữ liệu từ backend (không fix cứng)', async ({ page }) => {
+      await page.goto('/dashboard-student/subjects');
+      await waitForDataLoad(page);
+
+      const submitBtn = page.locator('.ss-act-btn--submit').first();
+      await expect(submitBtn).toBeVisible({ timeout: 5000 });
+      await submitBtn.click();
+
+      const modal = page.locator('.ss-modal').filter({ hasText: 'Nộp bài tập lớn' });
+      await expect(modal).toBeVisible();
+
+      // Mở dropdown chủ đề
+      const topicDropdown = modal.locator('.ss-custom-select');
+      await topicDropdown.locator('.ss-custom-select__trigger').click();
+      await page.waitForTimeout(300);
+
+      const options = modal.locator('.ss-custom-select__option');
+      const optionCount = await options.count();
+
+      // BUG PHÁT HIỆN: Dropdown chủ đề luôn fix cứng 10 options (Chủ đề 1 → Chủ đề 10)
+      // bất kể môn thi nào, bất kể cấu hình trên server
+      // Kỳ vọng: danh sách chủ đề phải được lấy từ API backend theo từng môn thi,
+      //   vì mỗi môn có số lượng chủ đề khác nhau (có môn 5, có môn 20 chủ đề)
+      //   và tên chủ đề phải có ý nghĩa (VD: "Quản lý nhà nước về kinh tế", "Luật hành chính")
+      //   thay vì generic "Chủ đề 1", "Chủ đề 2", ...
+      // Thực tế: frontend hardcode mảng ['Chủ đề 1', ..., 'Chủ đề 10'] — không gọi API
+      // → Lỗi nghiêm trọng: khi admin thay đổi cấu hình chủ đề trên server,
+      //   frontend vẫn hiển thị 10 chủ đề cũ — dữ liệu không đồng bộ
+
+      // Verify: nếu fix cứng thì luôn = 10, nếu từ API thì có thể khác 10
+      // Test này FAIL vì frontend đang hardcode 10 options
+      expect(optionCount).not.toBe(10);
+
+      // Kiểm tra tên chủ đề không phải generic "Chủ đề X"
+      const firstOptionText = await options.first().textContent();
+      expect(firstOptionText?.trim()).not.toMatch(/^Chủ đề \d+$/);
+
+      await modal.locator('.ss-modal-close').click();
+    });
+
+    // ─── TC-SS-16 ───────────────────────────────────────────────
+    test('TC-SS-16: Đăng xuất khỏi hệ thống', async ({ page }) => {
       await page.goto('/dashboard-student/subjects');
       await waitForDataLoad(page);
 

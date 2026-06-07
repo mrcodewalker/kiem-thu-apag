@@ -544,79 +544,79 @@ test.describe.serial('Setup Mock Data — Grader Scoring', () => {
 // CLEANUP — Xóa kế hoạch thi mock để có thể chạy lại từ đầu
 // Chạy riêng: npx playwright test setup-grader-mock-data --headed --grep "CLEANUP"
 // ============================================================
-test.describe('Cleanup Mock Data', () => {
-  // Cleanup cũng dùng Secretary
-  test.use({ storageState: fs.existsSync(AUTH_FILE) ? AUTH_FILE : undefined });
+// test.describe('Cleanup Mock Data', () => {
+//   // Cleanup cũng dùng Secretary
+//   test.use({ storageState: fs.existsSync(AUTH_FILE) ? AUTH_FILE : undefined });
 
-  test('CLEANUP: Xóa kế hoạch thi "Kiểm thử phần mềm" để remake', async ({ page }) => {
-    await page.goto('/dashboard/exam-schedules');
-    await page.waitForSelector('.esm-title', { state: 'visible', timeout: 15_000 });
+//   test('CLEANUP: Xóa kế hoạch thi "Kiểm thử phần mềm" để remake', async ({ page }) => {
+//     await page.goto('/dashboard/exam-schedules');
+//     await page.waitForSelector('.esm-title', { state: 'visible', timeout: 15_000 });
 
-    // Tìm kế hoạch thi theo quyết định HK1
-    const decisionInput = page.locator('.filter-bar app-search-select input').first();
-    await decisionInput.click();
-    await decisionInput.fill(DECISION_NAME);
-    await decisionInput.press('Enter');
-    await page.waitForTimeout(800);
-    const decOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
-    if (await decOpt.isVisible({ timeout: 3000 })) await decOpt.click();
-    await page.waitForTimeout(500);
+//     // Tìm kế hoạch thi theo quyết định HK1
+//     const decisionInput = page.locator('.filter-bar app-search-select input').first();
+//     await decisionInput.click();
+//     await decisionInput.fill(DECISION_NAME);
+//     await decisionInput.press('Enter');
+//     await page.waitForTimeout(800);
+//     const decOpt = page.locator('.ss-opt, [class*="ss-option"]').first();
+//     if (await decOpt.isVisible({ timeout: 3000 })) await decOpt.click();
+//     await page.waitForTimeout(500);
 
-    // Lọc theo tên môn
-    const subjectInput = page.locator('.filter-bar input[placeholder*="môn"]').first();
-    await subjectInput.fill(SCHEDULE.subjectName);
-    await page.click('button.btn-search');
-    await page.waitForSelector('.skeleton-wrap', { state: 'hidden', timeout: 10_000 });
+//     // Lọc theo tên môn
+//     const subjectInput = page.locator('.filter-bar input[placeholder*="môn"]').first();
+//     await subjectInput.fill(SCHEDULE.subjectName);
+//     await page.click('button.btn-search');
+//     await page.waitForSelector('.skeleton-wrap', { state: 'hidden', timeout: 10_000 });
 
-    const rows = page.locator('.esm-table tbody tr');
-    const count = await rows.count();
+//     const rows = page.locator('.esm-table tbody tr');
+//     const count = await rows.count();
 
-    if (count === 0) {
-      console.log(`ℹ️ Không tìm thấy kế hoạch thi "${SCHEDULE.subjectName}" — không cần xóa`);
-      return;
-    }
+//     if (count === 0) {
+//       console.log(`ℹ️ Không tìm thấy kế hoạch thi "${SCHEDULE.subjectName}" — không cần xóa`);
+//       return;
+//     }
 
-    // Xóa từng record tìm thấy (có thể có nhiều nếu chạy nhiều lần)
-    let deleted = 0;
-    for (let i = 0; i < count; i++) {
-      const firstRow = page.locator('.esm-table tbody tr').first();
-      const rowText = await firstRow.textContent();
+//     // Xóa từng record tìm thấy (có thể có nhiều nếu chạy nhiều lần)
+//     let deleted = 0;
+//     for (let i = 0; i < count; i++) {
+//       const firstRow = page.locator('.esm-table tbody tr').first();
+//       const rowText = await firstRow.textContent();
 
-      if (!rowText?.includes(SCHEDULE.subjectName)) break;
+//       if (!rowText?.includes(SCHEDULE.subjectName)) break;
 
-      // Mở menu 3 chấm
-      await firstRow.locator('.act-menu-btn').click();
-      await page.waitForTimeout(300);
+//       // Mở menu 3 chấm
+//       await firstRow.locator('.act-menu-btn').click();
+//       await page.waitForTimeout(300);
 
-      const deleteItem = page.locator('.act-dropdown .act-item--danger:has-text("Xóa")');
-      if (!await deleteItem.isVisible({ timeout: 2000 })) {
-        console.warn(`  ⚠️ Không có nút Xóa cho record này (có thể đã có phòng thi)`);
-        await page.keyboard.press('Escape');
-        break;
-      }
-      await deleteItem.click();
-      await page.waitForTimeout(300);
+//       const deleteItem = page.locator('.act-dropdown .act-item--danger:has-text("Xóa")');
+//       if (!await deleteItem.isVisible({ timeout: 2000 })) {
+//         console.warn(`  ⚠️ Không có nút Xóa cho record này (có thể đã có phòng thi)`);
+//         await page.keyboard.press('Escape');
+//         break;
+//       }
+//       await deleteItem.click();
+//       await page.waitForTimeout(300);
 
-      // Inline confirm
-      const inlineConfirm = page.locator('.inline-confirm').first();
-      await expect(inlineConfirm).toBeVisible({ timeout: 3000 });
-      await inlineConfirm.locator('.ic-confirm').click();
-      await page.waitForTimeout(500);
+//       // Inline confirm
+//       const inlineConfirm = page.locator('.inline-confirm').first();
+//       await expect(inlineConfirm).toBeVisible({ timeout: 3000 });
+//       await inlineConfirm.locator('.ic-confirm').click();
+//       await page.waitForTimeout(500);
 
-      // Custom dialog confirm
-      const confirmDeleteBtn = page.locator('app-custom-dialog button:has-text("Xóa ngay")');
-      if (await confirmDeleteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await confirmDeleteBtn.click();
-        await page.waitForTimeout(2000);
-      }
+//       // Custom dialog confirm
+//       const confirmDeleteBtn = page.locator('app-custom-dialog button:has-text("Xóa ngay")');
+//       if (await confirmDeleteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+//         await confirmDeleteBtn.click();
+//         await page.waitForTimeout(2000);
+//       }
 
-      await page.waitForTimeout(1500);
-      deleted++;
-      console.log(`  🗑️ Đã xóa record ${deleted}`);
-    }
+//       await page.waitForTimeout(1500);
+//       deleted++;
+//       console.log(`  🗑️ Đã xóa record ${deleted}`);
+//     }
 
-    console.log(`✅ CLEANUP hoàn tất — đã xóa ${deleted} kế hoạch thi "${SCHEDULE.subjectName}"`);
-    console.log(`   Bạn có thể chạy lại setup từ SETUP-02`);
-  });
+//     console.log(`✅ CLEANUP hoàn tất — đã xóa ${deleted} kế hoạch thi "${SCHEDULE.subjectName}"`);
+//     console.log(`   Bạn có thể chạy lại setup từ SETUP-02`);
+//   });
 
-});
+// });
